@@ -41,7 +41,7 @@ if "authenticated" not in st.session_state:
 if "theme" not in st.session_state:
     st.session_state.theme = "Civil Dark BIM (Rekomendasi)"
 
-# Definisi CSS Tema Modern (Gak Monoton, High-Tech, dan Profesional)
+# Definisi CSS Tema Modern
 THEME_CSS = {
     "Civil Dark BIM (Rekomendasi)": """
     <style>
@@ -53,7 +53,6 @@ THEME_CSS = {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
         
-        /* Sidebar Modern Slate */
         section[data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0e172a 0%, #090e1c 100%) !important;
             border-right: 1px solid rgba(56, 189, 248, 0.2);
@@ -68,7 +67,6 @@ THEME_CSS = {
             color: #F1F5F9 !important;
         }
         
-        /* Modern Glass Card */
         .glass-card {
             background: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(12px);
@@ -84,7 +82,6 @@ THEME_CSS = {
             box-shadow: 0 12px 40px rgba(14, 165, 233, 0.15);
         }
 
-        /* KPI Metric Cards */
         .kpi-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -129,7 +126,6 @@ THEME_CSS = {
             font-weight: 500;
         }
 
-        /* Tabs Modern High-Tech */
         .stTabs [data-baseweb="tab-list"] {
             background: rgba(15, 23, 42, 0.85) !important;
             border-radius: 14px;
@@ -165,7 +161,6 @@ THEME_CSS = {
             font-weight: 700 !important;
         }
 
-        /* Inputs & Buttons */
         div[data-baseweb="input"] {
             background-color: #1E293B !important;
             border-radius: 10px;
@@ -188,7 +183,6 @@ THEME_CSS = {
             box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
         }
 
-        /* Status Badges */
         .badge-safe {
             background: rgba(16, 185, 129, 0.15);
             border: 1px solid #10B981;
@@ -670,7 +664,7 @@ x_horiz, y_horiz = x_horiz - x_horiz[i0], (y_horiz - y_horiz[i0]) * sg
 ths_ = th_vals * sg
 nx, ny = -np.sin(ths_), np.cos(ths_)
 
-# Session state untuk Profil Vertikal jika belum ada
+# Session state untuk Profil Vertikal
 if "pvi_df" not in st.session_state:
     st.session_state.pvi_df = pd.DataFrame({
         "STA (m)": [0.0, 250.0, 500.0, 750.0],
@@ -1240,7 +1234,6 @@ def generate_excel_bm2021(r, pvi_data):
     font_bold = Font(name="Calibri", size=10, bold=True, color="0F172A")
     fill_header = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
     fill_sec = PatternFill(start_color="E0E7FF", end_color="E0E7FF", fill_type="solid")
-    fill_accent = PatternFill(start_color="FEF08A", end_color="FEF08A", fill_type="solid")
     thin = Side(style="thin", color="CBD5E1")
     border_cell = Border(left=thin, right=thin, top=thin, bottom=thin)
     align_c = Alignment(horizontal="center", vertical="center")
@@ -1339,13 +1332,11 @@ with tab_denah:
     with col_t1:
         fig_2d = go.Figure()
         
-        # Koordinat Tepi Perkerasan & Bahu
         xl, yl = x_horiz + (B / 2) * nx, y_horiz + (B / 2) * ny
         xr, yr = x_horiz - (B / 2) * nx, y_horiz - (B / 2) * ny
         x_sh_l, y_sh_l = x_horiz + (B / 2 + Bahu) * nx, y_horiz + (B / 2 + Bahu) * ny
         x_sh_r, y_sh_r = x_horiz - (B / 2 + Bahu) * nx, y_horiz - (B / 2 + Bahu) * ny
         
-        # Bahu Jalan Layer
         if show_shoulder:
             fig_2d.add_trace(go.Scatter(
                 x=np.concatenate([x_sh_l, x_sh_r[::-1]]),
@@ -1355,17 +1346,15 @@ with tab_denah:
                 name='Bahu Jalan', hoverinfo='skip'
             ))
             
-        # Perkerasan Aspal
         if show_pavement:
             fig_2d.add_trace(go.Scatter(
                 x=np.concatenate([xl, xr[::-1]]),
                 y=np.concatenate([yl, yr[::-1]]),
                 fill='toself', fillcolor='rgba(56, 189, 248, 0.18)',
                 line=dict(color='rgba(14, 165, 233, 0.6)', width=1.5),
-                name='Perkerasan Jalan (Carriageway)', hoverinfo='skip'
+                name='Perkerasan Jalan', hoverinfo='skip'
             ))
             
-        # As Jalan (Centerline)
         fig_2d.add_trace(go.Scatter(
             x=x_horiz, y=y_horiz, mode='lines', name='As Jalan (Centerline)',
             line=dict(color='#38BDF8', width=3),
@@ -1373,7 +1362,6 @@ with tab_denah:
             customdata=[sta_str(r['sta_awal'] + sv) for sv in s_vals]
         ))
 
-        # Garis Tangen PI
         idx_start = np.argmin(np.abs(s_vals - 0))
         idx_end = np.argmin(np.abs(s_vals - r["Ltot"]))
         x_ts, y_ts = x_horiz[idx_start], y_horiz[idx_start]
@@ -1397,7 +1385,6 @@ with tab_denah:
                 font=dict(size=11, color="#F8FAFC")
             )
 
-        # Garis Radius Rc
         mid_idx = idx_start if fc_flag else np.argmin(np.abs(s_vals - (r["Ltot"] / 2)))
         x_center = x_horiz[mid_idx] + sg * r["Rc"] * nx[mid_idx]
         y_center = y_horiz[mid_idx] + sg * r["Rc"] * ny[mid_idx]
@@ -1413,7 +1400,6 @@ with tab_denah:
                 marker=dict(size=12, color='#10B981', symbol='cross')
             ))
 
-        # Titik Kritis
         crit_pts_x, crit_pts_y, crit_lbls = [x_ts, x_st], [y_ts, y_st], [f"<b>{lbl_start}</b><br>{sta_str(r['sta_awal'])}", f"<b>{lbl_end}</b><br>{sta_str(r['sta_akhir'])}"]
         if not fc_flag:
             if r["jenis"].startswith("Spiral-Spiral"):
@@ -1443,7 +1429,6 @@ with tab_denah:
                 bgcolor="rgba(15, 23, 42, 0.85)", bordercolor="#EF4444", borderwidth=1, borderpad=3
             )
 
-        # Stasioning Ticks Tiap 50 m
         if show_stations:
             sta_min_plot = math.ceil((r["sta_awal"] + s_vals[0]) / 50.0) * 50.0
             sta_max_plot = math.floor((r["sta_awal"] + s_vals[-1]) / 50.0) * 50.0
@@ -1581,7 +1566,6 @@ with tab_pot:
 
     sel_sta = st.slider("Pilih Posisi Stasioning (STA):", float(r["sta_awal"] - 50), float(r["sta_akhir"] + 50), float(r["sta_awal"] + r["Ls"]), 5.0)
     
-    # Hitung superelevasi pada STA terpilih
     s_curr = sel_sta - r["sta_awal"]
     if s_curr <= s_start_trans or s_curr >= s_end_trans:
         cur_eluar, cur_edalam = -en_val, -en_val
@@ -1617,16 +1601,12 @@ with tab_pot:
 
     with col_cs1:
         fig_cs = go.Figure()
-        
-        # Garis tanah datar horizontal acuan
         fig_cs.add_hline(y=0, line_dash="dash", line_color="rgba(148, 163, 184, 0.4)")
         
-        # Penampang Perkerasan Kiri dan Kanan
         half_b = B / 2.0
         y_left = (cur_eluar / 100.0) * half_b if arah == "Kanan" else (cur_edalam / 100.0) * half_b
         y_right = (cur_edalam / 100.0) * half_b if arah == "Kanan" else (cur_eluar / 100.0) * half_b
         
-        # Profil Aspal
         fig_cs.add_trace(go.Scatter(
             x=[-half_b, 0, half_b], y=[y_left, 0, y_right],
             mode='lines+markers', name='Permukaan Aspal',
@@ -1634,7 +1614,6 @@ with tab_pot:
             marker=dict(size=8, color='#0284C7')
         ))
         
-        # Shaded Base Layer
         fig_cs.add_trace(go.Scatter(
             x=[-half_b, 0, half_b, half_b, -half_b],
             y=[y_left, 0, y_right, y_right - 0.4, y_left - 0.4],
@@ -1642,7 +1621,6 @@ with tab_pot:
             line=dict(color='rgba(0,0,0,0)'), name='Lapis Pondasi Agregat', hoverinfo='skip'
         ))
 
-        # Posisi Mobil Terhadap Kemiringan Aspal
         car_x = -half_b / 2 if arah == "Kanan" else half_b / 2
         car_y = (y_left / 2) if arah == "Kanan" else (y_right / 2)
         fig_cs.add_annotation(
@@ -1687,7 +1665,6 @@ with tab_prof:
         P = hitung_profil(pvi_clean, V)
         fig_vert = go.Figure()
         
-        # Tanah Asli
         fig_vert.add_trace(go.Scatter(
             x=tanah_clean.iloc[:, 0], y=tanah_clean.iloc[:, 1],
             mode='lines+markers', name='Tanah Asli (Existing Ground)',
@@ -1695,19 +1672,16 @@ with tab_prof:
             marker=dict(size=6, color='#CA8A04')
         ))
         
-        # Garis Rencana Jalan
         fig_vert.add_trace(go.Scatter(
             x=P["x"], y=P["y"], mode='lines', name='Elevasi Rencana Jalan',
             line=dict(color='#0284C7', width=3.5)
         ))
         
-        # PVI Points
         fig_vert.add_trace(go.Scatter(
             x=P["sta"], y=P["el"], mode='markers', name='Titik PVI / PPV',
             marker=dict(size=10, color='#EF4444', symbol='triangle-up')
         ))
 
-        # Annotations Kurva Vertikal
         for k in P["kurva"]:
             fig_vert.add_annotation(
                 x=k["sta"], y=k["el"],
@@ -1717,7 +1691,6 @@ with tab_prof:
                 bgcolor="rgba(15, 23, 42, 0.85)", font=dict(color="#F8FAFC", size=9)
             )
 
-        # Highlight Zona Tikungan Horizontal
         fig_vert.add_vrect(
             x0=r["sta_awal"], x1=r["sta_akhir"],
             fillcolor="rgba(56, 189, 248, 0.12)", layer="below", line_width=1,
@@ -1735,7 +1708,6 @@ with tab_prof:
         )
         st.plotly_chart(fig_vert, use_container_width=True)
 
-        # Neraca Galian dan Timbunan Tiap 50 m
         xs_ew = np.arange(math.ceil(P["x"][0] / 50) * 50, P["x"][-1] + 0.1, 50)
         rn_ew = np.interp(xs_ew, P["x"], P["y"])
         ta_ew = np.interp(xs_ew, tanah_clean.iloc[:, 0], tanah_clean.iloc[:, 1])
@@ -1773,7 +1745,6 @@ with tab_prof:
 with tab_sim:
     st.markdown("### 🚘 Visualisasi BIM 3D & Simulator Dinamika Kendaraan")
     
-    # Indikator Keselamatan Kendaraan
     v_safe = r["v_safe"]
     ac_lat = ((v_sim / 3.6)**2) / r["Rc"]
     f_aktual = (v_sim**2) / (127 * r["Rc"]) - r["e"]
@@ -1805,7 +1776,6 @@ with tab_sim:
 
     st.markdown(sim_badge, unsafe_allow_html=True)
 
-    # Frame animasi 3D
     step_frame = max(1, len(s_vals) // 70)
     frame_indices = list(range(0, len(s_vals), step_frame))
     if frame_indices[-1] != len(s_vals) - 1:
