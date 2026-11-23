@@ -1517,7 +1517,20 @@ with tab3:
     st.markdown("<h3 style='color: #3A0056;'>🚘 Simulator Mobil Jalan di Atas Peta</h3>", unsafe_allow_html=True)
 
     v_safe = r["v_safe"]
-    if v_sim <= v_safe:
+    # --- Evaluasi kelayakan tikungan (tidak standar -> mobil crash) ---
+    sebab_rc = r["Rc"] < r["Rmin"] - 1e-9
+    sebab_v = v_sim > v_safe + 10
+    crash = bool(sebab_rc or sebab_v)
+
+    if crash:
+        car_color = "#C62828"
+        status_box = f"""
+        <div class="status-card status-bahaya">
+            💥 <b>KONDISI MERAH (TIDAK STANDAR / BAHAYA):</b> Mobil akan CRASH dan keluar jalur!<br>
+            Lihat animasi dan analisis penyebabnya di bawah peta.
+        </div>
+        """
+    elif v_sim <= v_safe:
         car_color = "#2E7D32"
         status_box = f"""
         <div class="status-card status-oke">
@@ -1525,20 +1538,12 @@ with tab3:
             Kecepatan simulasi ({v_sim} km/jam) berada di bawah batas kecepatan aman tikungan ({v_safe:.1f} km/jam).
         </div>
         """
-    elif v_sim <= v_safe + 10:
+    else:
         car_color = "#EF6C00"
         status_box = f"""
         <div class="status-card status-sedang">
             🟡 <b>KONDISI KUNING (SEDANG / WASPADA):</b> Mobil Mendekati Batas Aman!<br>
             Kecepatan simulasi ({v_sim} km/jam) sedikit melampaui V_aman ({v_safe:.1f} km/jam). Harap kurangi kecepatan.
-        </div>
-        """
-    else:
-        car_color = "#C62828"
-        status_box = f"""
-        <div class="status-card status-bahaya">
-            🔴 <b>KONDISI MERAH (TIDAK OKE / BAHAYA):</b> Over-Speed!<br>
-            Kecepatan simulasi ({v_sim} km/jam) melampaui batas aman ({v_safe:.1f} km/jam). Berisiko selip atau kecelakaan.
         </div>
         """
     st.markdown(status_box, unsafe_allow_html=True)
@@ -1602,7 +1607,15 @@ with tab3:
         klat, klon = to_latlon(kx, ky)
         key_json.append(dict(lat=float(klat), lon=float(klon), lbl=lbl, sta=sta_str(r["sta_awal"] + sv)))
 
+    # Titik crash: awal bagian lengkung penuh (sekitar 30% busur lingkaran)
+    crash_s = r["Ls"] + 0.3 * r["Lc"]
+    crash_idx = int(np.clip(np.argmin(np.abs(s_grid - crash_s)), 2, len(s_grid) - 3))
+    slide_m = float(np.clip(v_sim ** 2 / (254 * 0.3), 12, 40))
+    turn_sign = 1.0 if (g_bearing[crash_idx + 1] - g_bearing[crash_idx - 1]) > 0 else -1.0
+    crash_sta = sta_list[crash_idx]
+
     map_data = dict(
+        crash=crash, crashIdx=crash_idx, slide=slide_m, spin=150.0 * turn_sign, crashSta=crash_sta,
         lat=[round(float(v), 7) for v in c_lat],
         lon=[round(float(v), 7) for v in c_lon],
         hd=[round(float(v), 2) for v in g_bearing],
@@ -1639,6 +1652,10 @@ with tab3:
   #hud b { color:#880E4F; }
   .car-wrap { position:absolute; transition:none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
   .key-lbl { background:rgba(255,255,255,.94); border:1px solid #D50000; color:#8E0000; font-weight:700; font-size:11px; border-radius:6px; padding:1px 5px; white-space:nowrap; }
+  #crashBanner { display:none; position:absolute; top:12px; right:12px; z-index:1000; background:rgba(183,28,28,.95); color:#fff; border-radius:12px; padding:10px 16px; font-size:16px; font-weight:800; box-shadow:0 3px 12px rgba(0,0,0,.4); animation: blink .7s infinite alternate; }
+  @keyframes blink { from { transform:scale(1); } to { transform:scale(1.06); } }
+  .boom { font-size:46px; line-height:1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); animation: pop .5s ease-out; }
+  @keyframes pop { from { transform:scale(.2); opacity:0; } to { transform:scale(1); opacity:1; } }
   .leaflet-div-icon { background:transparent; border:none; }
 </style></head>
 <body>
@@ -1649,6 +1666,7 @@ with tab3:
     <div><b>Elevasi:</b> <span id="hZ">-</span> m</div>
     <div><b>Kecepatan:</b> <span id="hV">-</span> km/jam <span id="hFlag"></span></div>
   </div>
+  <div id="crashBanner">💥 CRASH! Mobil keluar jalur</div>
 </div>
 <div id="panel">
   <button id="btnPlay">▶ Jalan</button>
@@ -1736,10 +1754,21 @@ sizeCar();
 
 // ---- Animasi ----
 const slider = document.getElementById('slider');
-slider.max = N - 1;
+const CR = D.crash;
+slider.max = CR ? D.crashIdx : N - 1;
 let pos = 0, playing = false, last = null;
+let phase = 'drive', slideT = 0, crashLayers = [], restartTimer = null;
+const playBtn = document.getElementById('btnPlay');
+const banner = document.getElementById('crashBanner');
+const flagEl = document.getElementById('hFlag');
 
 function lerp(a, b, t) { return a + (b - a) * t; }
+
+function setHud(sta, z) {
+  document.getElementById('hSta').textContent = sta;
+  document.getElementById('hZ').textContent = z.toFixed(2);
+  document.getElementById('hV').textContent = D.vsim.toFixed(0);
+}
 
 function render() {
   const i = Math.min(Math.floor(pos), N - 2);
@@ -1753,15 +1782,62 @@ function render() {
   if (document.getElementById('follow').checked) {
     map.setView([lat, lon], map.getZoom(), { animate:false });
   }
-  const idx = Math.round(pos);
-  document.getElementById('hSta').textContent = D.sta[Math.min(idx, N-1)];
-  document.getElementById('hZ').textContent = z.toFixed(2);
-  document.getElementById('hV').textContent = D.vsim.toFixed(0);
-  const flag = document.getElementById('hFlag');
-  if (D.vsim <= D.vsafe) { flag.textContent = '🟢 aman'; }
-  else if (D.vsim <= D.vsafe + 10) { flag.textContent = '🟡 waspada'; }
-  else { flag.textContent = '🔴 bahaya'; }
+  setHud(D.sta[Math.min(Math.round(pos), N-1)], z);
+  if (CR) { flagEl.textContent = '🔴 tidak standar'; }
+  else if (D.vsim <= D.vsafe) { flagEl.textContent = '🟢 aman'; }
+  else if (D.vsim <= D.vsafe + 10) { flagEl.textContent = '🟡 waspada'; }
+  else { flagEl.textContent = '🔴 bahaya'; }
   slider.value = Math.round(pos);
+}
+
+// ---- Fase crash: mobil lurus keluar jalur sambil berputar ----
+let slideFrom = null, slideTo = null;
+function startSlide() {
+  phase = 'slide'; slideT = 0;
+  const i = D.crashIdx;
+  const b = D.hd[i] * Math.PI / 180;
+  const mLat = 111320, mLon = 111320 * Math.cos(D.lat[i] * Math.PI / 180);
+  slideFrom = [D.lat[i], D.lon[i]];
+  slideTo = [D.lat[i] + Math.cos(b) * D.slide / mLat, D.lon[i] + Math.sin(b) * D.slide / mLon];
+  // bekas ban (skid mark)
+  crashLayers.push(L.polyline([slideFrom, slideTo], { color:'#212121', weight:4, opacity:.55, dashArray:'2 6' }).addTo(map));
+  flagEl.textContent = '💥 CRASH!';
+}
+
+function renderSlide(t) {
+  const e = 1 - Math.pow(1 - t, 2);
+  const lat = lerp(slideFrom[0], slideTo[0], e);
+  const lon = lerp(slideFrom[1], slideTo[1], e);
+  const hd = D.hd[D.crashIdx] + D.spin * e;
+  carMarker.setLatLng([lat, lon]);
+  carDiv.style.transform = 'rotate(' + hd + 'deg)';
+  if (document.getElementById('follow').checked) {
+    map.setView([lat, lon], map.getZoom(), { animate:false });
+  }
+}
+
+function finishCrash() {
+  phase = 'done'; playing = false;
+  playBtn.textContent = '↻ Ulangi';
+  carDiv.style.filter = 'grayscale(.45) brightness(.8) drop-shadow(0 2px 3px rgba(0,0,0,.6))';
+  crashLayers.push(L.marker(slideTo, { zIndexOffset: 2000, icon: L.divIcon({ className:'', html:'<div class="boom">💥</div>', iconSize:[46,46], iconAnchor:[23,40] }) }).addTo(map));
+  crashLayers.push(L.marker(slideTo, { zIndexOffset: 1500, icon: L.divIcon({ className:'', html:'<div class="key-lbl" style="border-color:#B71C1C;background:#FFEBEE">CRASH<br>STA ' + D.crashSta + '</div>', iconSize:[0,0], iconAnchor:[-14,-6] }) }).addTo(map));
+  banner.style.display = 'block';
+  setHud(D.crashSta, D.z[D.crashIdx]);
+  document.getElementById('hV').textContent = '0';
+  if (document.getElementById('loop').checked) {
+    restartTimer = setTimeout(function() { resetSim(); startPlay(); }, 3500);
+  }
+}
+
+function resetSim() {
+  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
+  crashLayers.forEach(l => map.removeLayer(l));
+  crashLayers = [];
+  banner.style.display = 'none';
+  carDiv.style.filter = '';
+  phase = 'drive'; pos = 0; slideT = 0;
+  render();
 }
 
 function frame(ts) {
@@ -1769,23 +1845,43 @@ function frame(ts) {
   if (last === null) last = ts;
   const dt = (ts - last) / 1000;
   last = ts;
-  const mult = parseFloat(document.getElementById('mult').value);
-  pos += (D.vsim / 3.6) * mult * dt;   // grid 1 m per indeks
-  if (pos >= N - 1) {
-    if (document.getElementById('loop').checked) { pos = 0; }
-    else { pos = N - 1; playing = false; document.getElementById('btnPlay').textContent = '▶ Jalan'; }
+  if (phase === 'drive') {
+    const mult = parseFloat(document.getElementById('mult').value);
+    pos += (D.vsim / 3.6) * mult * dt;   // grid 1 m per indeks
+    if (CR && pos >= D.crashIdx) {
+      pos = D.crashIdx; render(); startSlide();
+    } else if (pos >= N - 1) {
+      if (document.getElementById('loop').checked) { pos = 0; }
+      else { pos = N - 1; playing = false; playBtn.textContent = '▶ Jalan'; }
+      render();
+    } else {
+      render();
+    }
+  } else if (phase === 'slide') {
+    slideT += dt / 1.6;
+    renderSlide(Math.min(1, slideT));
+    if (slideT >= 1) { finishCrash(); return; }
   }
-  render();
-  requestAnimationFrame(frame);
+  if (playing) requestAnimationFrame(frame);
 }
 
-document.getElementById('btnPlay').onclick = function() {
-  playing = !playing;
-  this.textContent = playing ? '⏸ Pause' : '▶ Jalan';
-  if (playing) { last = null; requestAnimationFrame(frame); }
+function startPlay() {
+  playing = true; playBtn.textContent = '⏸ Pause';
+  last = null; requestAnimationFrame(frame);
+}
+
+playBtn.onclick = function() {
+  if (phase === 'done') { resetSim(); startPlay(); return; }
+  if (playing) { playing = false; playBtn.textContent = '▶ Jalan'; }
+  else { startPlay(); }
 };
-document.getElementById('btnReset').onclick = function() { pos = 0; render(); };
-slider.oninput = function() { pos = parseFloat(this.value); render(); };
+document.getElementById('btnReset').onclick = function() {
+  playing = false; playBtn.textContent = '▶ Jalan'; resetSim();
+};
+slider.oninput = function() {
+  if (phase !== 'drive') { resetSim(); }
+  pos = parseFloat(this.value); render();
+};
 document.getElementById('follow').onchange = function() {
   if (!this.checked) map.fitBounds(L.latLngBounds(center).pad(0.35));
 };
@@ -1795,6 +1891,69 @@ render();
 """
     html_map = html_map.replace("__DATA__", json.dumps(map_data)).replace("__COLOR__", car_color)
     components.html(html_map, height=680, scrolling=False)
+    # --- Analisis penyebab crash & saran perbaikan ---
+    if crash:
+        sebab, saran = [], []
+        Rmin_r = r["Rmin"]
+        Rc_saran = float(math.ceil(Rmin_r / 10) * 10)
+        if sebab_rc:
+            f_perlu = (r["V"] ** 2) / (127 * r["Rc"]) - r["e"]
+            sebab.append(
+                f"<b>Jari-jari tikungan terlalu kecil.</b> Rc = {r['Rc']:.1f} m &lt; Rmin = {Rmin_r:.1f} m "
+                f"(Vr = {r['V']:.0f} km/jam, e maks = {r['emax']*100:.1f}%). Pada kecepatan rencana, gesekan samping yang "
+                f"dibutuhkan f = V²/(127·R) − e = {f_perlu:.3f}, sedangkan batas f maks = {r['fm']:.3f}. "
+                f"Ban tidak sanggup menahan gaya sentrifugal sehingga mobil terlempar ke luar tikungan."
+            )
+            saran.append(f"Perbesar Rc minimal <b>{Rc_saran:.0f} m</b> (≥ Rmin), atau pilih mode &quot;Otomatis&quot; pada Jari-jari Tikungan.")
+            saran.append("Alternatif: turunkan kecepatan rencana Vr, atau naikkan e maks (maksimum 10–12% sesuai standar).")
+        if sebab_v:
+            f_perlu_v = (v_sim ** 2) / (127 * r["Rc"]) - r["e"]
+            Rc_req = float(math.ceil((v_sim ** 2) / (127 * (r["emax"] + r["fm"])) / 10) * 10)
+            sebab.append(
+                f"<b>Kecepatan kendaraan melebihi batas aman.</b> V simulasi = {v_sim} km/jam, sedangkan V aman tikungan = {v_safe:.1f} km/jam "
+                f"(selisih {v_sim - v_safe:.1f} km/jam). Gesekan yang dibutuhkan f = {f_perlu_v:.3f} &gt; f maks = {r['fm']:.3f}, "
+                f"sehingga mobil selip keluar jalur (over-speed)."
+            )
+            saran.append(f"Batasi kecepatan di tikungan ≤ <b>{math.floor(v_safe / 5) * 5:.0f} km/jam</b> (pasang rambu batas kecepatan).")
+            saran.append(f"Atau perbesar jari-jari tikungan hingga Rc ≥ <b>{Rc_req:.0f} m</b> agar aman pada {v_sim} km/jam.")
+        if v_sim > r["V"]:
+            sebab.append(f"Kecepatan simulasi ({v_sim} km/jam) juga lebih tinggi dari kecepatan rencana Vr ({r['V']:.0f} km/jam), yaitu di luar asumsi desain.")
+            saran.append(f"Pastikan kecepatan operasional tidak melebihi Vr = {r['V']:.0f} km/jam, atau naikkan Vr desain.")
+        saran.append("Pertimbangkan penambahan rambu peringatan tikungan tajam, marka chevron, dan perkerasan dengan koefisien gesek baik.")
+
+        li_s = "".join(f"<li style='margin-bottom:6px'>{x}</li>" for x in sebab)
+        li_p = "".join(f"<li style='margin-bottom:6px'>{x}</li>" for x in saran)
+        st.markdown(
+            f"""
+            <div style="background:#FFEBEE; border:2px solid #E57373; border-radius:14px; padding:16px 20px; color:#3E0A0A; margin-top:8px;">
+                <h4 style="color:#B71C1C; margin:0 0 8px 0;">💥 Kenapa mobil crash / keluar jalur?</h4>
+                <ul style="margin:0 0 12px 18px; padding:0; color:#3E0A0A;">{li_s}</ul>
+                <h4 style="color:#1B5E20; margin:0 0 8px 0;">🛠️ Apa yang harus diperbaiki?</h4>
+                <ul style="margin:0 0 0 18px; padding:0; color:#12301A;">{li_p}</ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    elif v_sim > v_safe:
+        st.markdown(
+            f"""
+            <div style="background:#FFF8E1; border:2px solid #FFD54F; border-radius:14px; padding:14px 18px; color:#4E342E; margin-top:8px;">
+                ⚠️ <b>Belum crash, tetapi mendekati batas.</b> V simulasi ({v_sim} km/jam) sudah di atas V aman ({v_safe:.1f} km/jam).
+                Turunkan kecepatan ≤ {math.floor(v_safe / 5) * 5:.0f} km/jam agar margin keselamatan terjaga.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f"""
+            <div style="background:#E8F5E9; border:2px solid #81C784; border-radius:14px; padding:14px 18px; color:#1B5E20; margin-top:8px;">
+                ✅ <b>Tikungan memenuhi standar.</b> Rc = {r['Rc']:.1f} m ≥ Rmin = {r['Rmin']:.1f} m dan V simulasi ({v_sim} km/jam)
+                ≤ V aman ({v_safe:.1f} km/jam). Mobil melintas tanpa keluar jalur.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     st.caption("ℹ️ Peta memakai OpenStreetMap/Esri (butuh koneksi internet). Jalan abu-abu = lebar perkerasan B; garis kuning putus-putus = as jalan; lingkaran merah = titik utama tikungan.")
 
 # ----------------------------------------------------------------------------
