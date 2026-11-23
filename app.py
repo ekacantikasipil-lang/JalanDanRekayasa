@@ -123,6 +123,35 @@ st.markdown("""
         color: #B71C1C;
         border: 2px solid #E57373;
     }
+    /* ---- Teks gelap agar terbaca (tab, label widget, caption) ---- */
+    .stTabs [data-baseweb="tab"],
+    .stTabs [data-baseweb="tab"] *,
+    .stTabs button[role="tab"],
+    .stTabs button[role="tab"] * {
+        opacity: 1 !important;
+        color: #3A0056 !important;
+        font-weight: 800 !important;
+    }
+    .stTabs [aria-selected="true"],
+    .stTabs [aria-selected="true"] * {
+        color: #FFFFFF !important;
+    }
+    div[data-testid="stWidgetLabel"],
+    div[data-testid="stWidgetLabel"] *,
+    .stApp label,
+    .stApp label p {
+        color: #3A0056 !important;
+        opacity: 1 !important;
+        font-weight: 700 !important;
+    }
+    div[data-testid="stCaptionContainer"],
+    div[data-testid="stCaptionContainer"] * {
+        color: #4A148C !important;
+        opacity: 1 !important;
+    }
+    div[data-testid="stMarkdownContainer"] p {
+        color: #2D3142;
+    }
 </style>
 """, unsafe_allow_html=True)
 
