@@ -158,6 +158,213 @@ st.markdown("""
 # ----------------------------------------------------------------------------
 # 1. KEAMANAN & AUTHENTICATION (PETUNJUK PW DI POJOK KANAN ATAS)
 # ----------------------------------------------------------------------------
+HERO_HTML = """<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body { margin:0; padding:0; background:transparent; font-family:'Segoe UI', Arial, sans-serif; }
+  #wrap { position:relative; border-radius:18px; overflow:hidden; border:3px solid #F48FB1; box-shadow:0 6px 20px rgba(136,14,79,.18); }
+  svg { display:block; width:100%; height:auto; }
+  .clk { cursor:pointer; }
+  .clk:hover { filter:brightness(1.12); }
+  .bob { transform-box:fill-box; transform-origin:center; animation:bob .6s ease-in-out infinite alternate; }
+  @keyframes bob { from { transform:scale(1,1); } to { transform:scale(1.05,.93); } }
+  .pop { animation:pop .55s ease-out !important; }
+  @keyframes pop { 0% { transform:scale(1); } 30% { transform:scale(1.5) rotate(-8deg); } 60% { transform:scale(.85) rotate(6deg); } 100% { transform:scale(1); } }
+  .sway { transform-box:fill-box; transform-origin:50% 100%; animation:sway 2.4s ease-in-out infinite alternate; }
+  @keyframes sway { from { transform:rotate(-7deg); } to { transform:rotate(7deg); } }
+  .wobble { transform-box:fill-box; transform-origin:50% 100%; animation:wobble 1.3s ease-in-out infinite alternate; }
+  @keyframes wobble { from { transform:rotate(-5deg); } to { transform:rotate(5deg); } }
+  .hop { transform-box:fill-box; transform-origin:50% 100%; animation:hop .9s ease-in-out infinite alternate; }
+  @keyframes hop { from { transform:translateY(0) scale(1,1); } to { transform:translateY(-9px) scale(.94,1.06); } }
+  .rays { transform-box:fill-box; transform-origin:center; animation:spin 22s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .cloud { animation:drift 55s linear infinite; }
+  @keyframes drift { from { transform:translateX(-350px); } to { transform:translateX(1500px); } }
+  .dash { animation:dash 0.8s linear infinite; }
+  @keyframes dash { to { stroke-dashoffset:-34; } }
+  .bubble { position:absolute; z-index:10; pointer-events:none; background:#fff; color:#880E4F; font-weight:800; font-size:15px; border:2px solid #F48FB1; border-radius:14px; padding:4px 10px; white-space:nowrap; animation:rise 1.1s ease-out forwards; }
+  @keyframes rise { from { opacity:1; transform:translate(-50%,0); } to { opacity:0; transform:translate(-50%,-46px); } }
+  #hint { text-align:center; color:#3A0056; font-weight:800; font-size:14px; padding:8px 0 2px; }
+</style></head>
+<body>
+<div id="wrap">
+<svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3E5FC"/><stop offset="1" stop-color="#FFF9E6"/></linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C5E1A5"/><stop offset="1" stop-color="#9CCC65"/></linearGradient>
+    <path id="roadF" d="M -50 300 C 250 300, 350 120, 600 160 C 850 200, 950 300, 1250 200"/>
+    <path id="roadR" d="M 1250 200 C 950 300, 850 200, 600 160 C 350 120, 250 300, -50 300"/>
+  </defs>
+
+  <rect width="1200" height="400" fill="url(#sky)"/>
+
+  <g class="clk" data-snd="whoosh" data-msg="Wussh~ ☁️">
+    <g class="cloud" style="animation-delay:-8s"><g transform="translate(0,55)"><ellipse cx="0" cy="0" rx="46" ry="20" fill="#fff"/><ellipse cx="-28" cy="8" rx="28" ry="15" fill="#fff"/><ellipse cx="30" cy="8" rx="30" ry="15" fill="#fff"/></g></g>
+  </g>
+  <g class="clk" data-snd="whoosh" data-msg="Wussh~ ☁️">
+    <g class="cloud" style="animation-delay:-30s"><g transform="translate(0,110)"><ellipse cx="0" cy="0" rx="38" ry="16" fill="#fff" opacity=".95"/><ellipse cx="-24" cy="7" rx="24" ry="12" fill="#fff" opacity=".95"/><ellipse cx="26" cy="7" rx="26" ry="12" fill="#fff" opacity=".95"/></g></g>
+  </g>
+
+  <g class="clk" data-snd="tada" data-msg="Selamat datang! ☀️">
+    <g transform="translate(1080,72)">
+      <g class="rays"><g stroke="#FFB300" stroke-width="5" stroke-linecap="round">
+        <line x1="0" y1="-52" x2="0" y2="-68"/><line x1="0" y1="52" x2="0" y2="68"/><line x1="-52" y1="0" x2="-68" y2="0"/><line x1="52" y1="0" x2="68" y2="0"/>
+        <line x1="-37" y1="-37" x2="-48" y2="-48"/><line x1="37" y1="-37" x2="48" y2="-48"/><line x1="-37" y1="37" x2="-48" y2="48"/><line x1="37" y1="37" x2="48" y2="48"/></g></g>
+      <circle r="40" fill="#FFD54F" stroke="#FFB300" stroke-width="3"/>
+      <circle cx="-13" cy="-7" r="4.5" fill="#4E342E"/><circle cx="13" cy="-7" r="4.5" fill="#4E342E"/>
+      <path d="M -16 8 Q 0 26 16 8" fill="none" stroke="#4E342E" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="-24" cy="6" r="6" fill="#FF8A80" opacity=".6"/><circle cx="24" cy="6" r="6" fill="#FF8A80" opacity=".6"/>
+    </g>
+  </g>
+
+  <ellipse cx="220" cy="150" rx="330" ry="52" fill="#A5D6A7"/>
+  <ellipse cx="860" cy="152" rx="380" ry="62" fill="#81C784"/>
+  <rect y="145" width="1200" height="255" fill="url(#grass)"/>
+
+  <use href="#roadF" fill="none" stroke="#4a4a4a" stroke-width="74" stroke-linecap="butt"/>
+  <use href="#roadF" fill="none" stroke="#7a7a7a" stroke-width="66" stroke-linecap="butt"/>
+  <use href="#roadF" fill="none" stroke="#FFD54F" stroke-width="3.5" stroke-dasharray="20 14" class="dash"/>
+
+  <!-- tulip -->
+  <g class="clk" data-snd="chime" data-msg="Tulip cantik 🌷"><g class="sway" style="animation-delay:-.3s"><g transform="translate(70,205)"><path d="M0 0 L0 38" stroke="#388E3C" stroke-width="4"/><path d="M0 30 Q -16 20 -20 8 Q -6 14 0 28" fill="#4CAF50"/><path d="M0 0 C -15 -4 -15 -28 -7 -33 L 0 -22 L 7 -33 C 15 -28 15 -4 0 0 Z" fill="#EC407A" stroke="#AD1457" stroke-width="1.5"/></g></g></g>
+  <g class="clk" data-snd="chime" data-msg="Tulip cantik 🌷"><g class="sway" style="animation-delay:-1.1s"><g transform="translate(160,200)"><path d="M0 0 L0 38" stroke="#388E3C" stroke-width="4"/><path d="M0 30 Q 16 20 20 8 Q 6 14 0 28" fill="#4CAF50"/><path d="M0 0 C -15 -4 -15 -28 -7 -33 L 0 -22 L 7 -33 C 15 -28 15 -4 0 0 Z" fill="#FFB300" stroke="#E65100" stroke-width="1.5"/></g></g></g>
+  <g class="clk" data-snd="chime" data-msg="Tulip cantik 🌷"><g class="sway" style="animation-delay:-.7s"><g transform="translate(215,352)"><path d="M0 0 L0 40" stroke="#388E3C" stroke-width="4"/><path d="M0 32 Q -16 22 -20 10 Q -6 16 0 30" fill="#4CAF50"/><path d="M0 0 C -16 -4 -16 -30 -8 -35 L 0 -23 L 8 -35 C 16 -30 16 -4 0 0 Z" fill="#E91E63" stroke="#880E4F" stroke-width="1.5"/></g></g></g>
+  <g class="clk" data-snd="chime" data-msg="Tulip cantik 🌷"><g class="sway" style="animation-delay:-1.6s"><g transform="translate(340,372)"><path d="M0 0 L0 36" stroke="#388E3C" stroke-width="4"/><path d="M0 28 Q 16 18 20 6 Q 6 12 0 26" fill="#4CAF50"/><path d="M0 0 C -15 -4 -15 -28 -7 -33 L 0 -22 L 7 -33 C 15 -28 15 -4 0 0 Z" fill="#AB47BC" stroke="#4A148C" stroke-width="1.5"/></g></g></g>
+  <g class="clk" data-snd="chime" data-msg="Tulip cantik 🌷"><g class="sway" style="animation-delay:-.2s"><g transform="translate(640,300)"><path d="M0 0 L0 38" stroke="#388E3C" stroke-width="4"/><path d="M0 30 Q -16 20 -20 8 Q -6 14 0 28" fill="#4CAF50"/><path d="M0 0 C -15 -4 -15 -28 -7 -33 L 0 -22 L 7 -33 C 15 -28 15 -4 0 0 Z" fill="#FF7043" stroke="#BF360C" stroke-width="1.5"/></g></g></g>
+  <g class="clk" data-snd="chime" data-msg="Tulip cantik 🌷"><g class="sway" style="animation-delay:-1.3s"><g transform="translate(1000,352)"><path d="M0 0 L0 40" stroke="#388E3C" stroke-width="4"/><path d="M0 32 Q 16 22 20 10 Q 6 16 0 30" fill="#4CAF50"/><path d="M0 0 C -16 -4 -16 -30 -8 -35 L 0 -23 L 8 -35 C 16 -30 16 -4 0 0 Z" fill="#EC407A" stroke="#AD1457" stroke-width="1.5"/></g></g></g>
+  <g class="clk" data-snd="chime" data-msg="Tulip cantik 🌷"><g class="sway" style="animation-delay:-.9s"><g transform="translate(1130,340)"><path d="M0 0 L0 38" stroke="#388E3C" stroke-width="4"/><path d="M0 30 Q -16 20 -20 8 Q -6 14 0 28" fill="#4CAF50"/><path d="M0 0 C -15 -4 -15 -28 -7 -33 L 0 -22 L 7 -33 C 15 -28 15 -4 0 0 Z" fill="#FFB300" stroke="#E65100" stroke-width="1.5"/></g></g></g>
+
+  <!-- rambu tikungan -->
+  <g class="clk" data-snd="ding" data-msg="Awas tikungan! ⚠️">
+    <g class="wobble"><g transform="translate(520,268)">
+      <rect x="-3" y="0" width="6" height="58" fill="#757575"/>
+      <g transform="translate(0,-8)"><rect x="-30" y="-30" width="60" height="60" rx="8" transform="rotate(45)" fill="#FFD54F" stroke="#212121" stroke-width="3"/>
+      <path d="M -10 16 C -10 -2 6 4 6 -12" fill="none" stroke="#212121" stroke-width="5" stroke-linecap="round"/><path d="M -2 -14 L 6 -20 L 12 -10 Z" fill="#212121"/></g>
+    </g></g>
+  </g>
+
+  <!-- kerucut -->
+  <g class="clk" data-snd="boing" data-msg="Boing! 🚧"><g class="hop"><g transform="translate(870,285)">
+    <rect x="-18" y="18" width="36" height="7" rx="2" fill="#424242"/><path d="M-13 18 L-4 -22 L4 -22 L13 18 Z" fill="#FF7043" stroke="#BF360C" stroke-width="2"/>
+    <path d="M-9 4 L9 4 L7 -6 L-7 -6 Z" fill="#fff"/><circle cx="-3" cy="-12" r="1.6" fill="#212121"/><circle cx="3" cy="-12" r="1.6" fill="#212121"/>
+  </g></g></g>
+  <g class="clk" data-snd="boing" data-msg="Boing! 🚧"><g class="hop" style="animation-delay:-.45s"><g transform="translate(915,296)">
+    <rect x="-18" y="18" width="36" height="7" rx="2" fill="#424242"/><path d="M-13 18 L-4 -22 L4 -22 L13 18 Z" fill="#FF7043" stroke="#BF360C" stroke-width="2"/>
+    <path d="M-9 4 L9 4 L7 -6 L-7 -6 Z" fill="#fff"/><circle cx="-3" cy="-12" r="1.6" fill="#212121"/><circle cx="3" cy="-12" r="1.6" fill="#212121"/>
+  </g></g></g>
+
+  <!-- mobil 1 (maju) -->
+  <g>
+    <animateMotion dur="11s" repeatCount="indefinite" rotate="auto"><mpath href="#roadF"/></animateMotion>
+    <g transform="translate(0,13)">
+      <g class="clk bob" data-snd="horn" data-msg="Beep beep! 🚗">
+        <rect x="-30" y="-14" width="60" height="28" rx="10" fill="#F06292" stroke="#4A148C" stroke-width="2"/>
+        <rect x="-24" y="-18" width="11" height="5" rx="2" fill="#222"/><rect x="13" y="-18" width="11" height="5" rx="2" fill="#222"/>
+        <rect x="-24" y="13" width="11" height="5" rx="2" fill="#222"/><rect x="13" y="13" width="11" height="5" rx="2" fill="#222"/>
+        <rect x="-19" y="-8" width="18" height="16" rx="4" fill="#EC407A"/>
+        <path d="M4 -10 L18 -8 L18 8 L4 10 Z" fill="#E1F5FE" stroke="#4A148C" stroke-width="1.5"/>
+        <circle cx="11" cy="-4" r="3.4" fill="#fff"/><circle cx="12" cy="-4" r="1.6" fill="#000"/>
+        <circle cx="11" cy="4" r="3.4" fill="#fff"/><circle cx="12" cy="4" r="1.6" fill="#000"/>
+        <circle cx="28" cy="-8" r="2.6" fill="#FFF59D"/><circle cx="28" cy="8" r="2.6" fill="#FFF59D"/>
+      </g>
+    </g>
+  </g>
+  <!-- mobil 2 (balik) -->
+  <g>
+    <animateMotion dur="14s" begin="-6s" repeatCount="indefinite" rotate="auto"><mpath href="#roadR"/></animateMotion>
+    <g transform="translate(0,13)">
+      <g class="clk bob" data-snd="horn" data-msg="Tin tin! 🚙" style="animation-delay:-.3s">
+        <rect x="-30" y="-14" width="60" height="28" rx="10" fill="#4FC3F7" stroke="#4A148C" stroke-width="2"/>
+        <rect x="-24" y="-18" width="11" height="5" rx="2" fill="#222"/><rect x="13" y="-18" width="11" height="5" rx="2" fill="#222"/>
+        <rect x="-24" y="13" width="11" height="5" rx="2" fill="#222"/><rect x="13" y="13" width="11" height="5" rx="2" fill="#222"/>
+        <rect x="-19" y="-8" width="18" height="16" rx="4" fill="#29B6F6"/>
+        <path d="M4 -10 L18 -8 L18 8 L4 10 Z" fill="#E1F5FE" stroke="#4A148C" stroke-width="1.5"/>
+        <circle cx="11" cy="-4" r="3.4" fill="#fff"/><circle cx="12" cy="-4" r="1.6" fill="#000"/>
+        <circle cx="11" cy="4" r="3.4" fill="#fff"/><circle cx="12" cy="4" r="1.6" fill="#000"/>
+        <circle cx="28" cy="-8" r="2.6" fill="#FFF59D"/><circle cx="28" cy="8" r="2.6" fill="#FFF59D"/>
+      </g>
+    </g>
+  </g>
+  <!-- mobil 3 (maju, lebih lambat) -->
+  <g>
+    <animateMotion dur="17s" begin="-12s" repeatCount="indefinite" rotate="auto"><mpath href="#roadF"/></animateMotion>
+    <g transform="translate(0,13)">
+      <g class="clk bob" data-snd="horn" data-msg="Beep! 🚕" style="animation-delay:-.5s">
+        <rect x="-30" y="-14" width="60" height="28" rx="10" fill="#FFD54F" stroke="#4A148C" stroke-width="2"/>
+        <rect x="-24" y="-18" width="11" height="5" rx="2" fill="#222"/><rect x="13" y="-18" width="11" height="5" rx="2" fill="#222"/>
+        <rect x="-24" y="13" width="11" height="5" rx="2" fill="#222"/><rect x="13" y="13" width="11" height="5" rx="2" fill="#222"/>
+        <rect x="-19" y="-8" width="18" height="16" rx="4" fill="#FFCA28"/>
+        <path d="M4 -10 L18 -8 L18 8 L4 10 Z" fill="#E1F5FE" stroke="#4A148C" stroke-width="1.5"/>
+        <circle cx="11" cy="-4" r="3.4" fill="#fff"/><circle cx="12" cy="-4" r="1.6" fill="#000"/>
+        <circle cx="11" cy="4" r="3.4" fill="#fff"/><circle cx="12" cy="4" r="1.6" fill="#000"/>
+        <circle cx="28" cy="-8" r="2.6" fill="#FFF59D"/><circle cx="28" cy="8" r="2.6" fill="#FFF59D"/>
+      </g>
+    </g>
+  </g>
+</svg>
+</div>
+<div id="hint">🔊 Klik mobil, tulip, matahari, awan, rambu & kerucut — ada suaranya lho!</div>
+
+<script>
+let AC = null;
+function ensureAudio() {
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+  } catch (e) { AC = null; }
+}
+function noiseBuf(sec) {
+  const b = AC.createBuffer(1, Math.floor(AC.sampleRate * sec), AC.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return b;
+}
+function tone(freq, t0, dur, type, vol, f2) {
+  const o = AC.createOscillator(); o.type = type;
+  o.frequency.setValueAtTime(freq, t0);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+const SND = {
+  horn: function(t) { [0, 0.28].forEach(function(d) { tone(440, t + d, 0.2, 'square', 0.12); tone(554, t + d, 0.2, 'square', 0.12); }); },
+  chime: function(t) { [523, 659, 784, 1047].forEach(function(f, i) { tone(f, t + i * 0.1, 0.35, 'triangle', 0.2); }); },
+  tada: function(t) { tone(300, t, 0.35, 'sawtooth', 0.1, 900); [523, 659, 784].forEach(function(f) { tone(f, t + 0.35, 0.6, 'triangle', 0.18); }); },
+  ding: function(t) { tone(1320, t, 0.8, 'sine', 0.25); tone(1980, t, 0.5, 'sine', 0.1); },
+  boing: function(t) { tone(180, t, 0.5, 'sine', 0.3, 650); tone(650, t + 0.5, 0.3, 'sine', 0.2, 220); },
+  whoosh: function(t) {
+    const s = AC.createBufferSource(); s.buffer = noiseBuf(1.0);
+    const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2;
+    bp.frequency.setValueAtTime(400, t); bp.frequency.exponentialRampToValueAtTime(2500, t + 0.9);
+    const g = AC.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.0);
+    s.connect(bp); bp.connect(g); g.connect(AC.destination); s.start(t);
+  }
+};
+const wrap = document.getElementById('wrap');
+document.querySelectorAll('.clk').forEach(function(el) {
+  el.addEventListener('click', function(ev) {
+    ensureAudio();
+    if (AC && SND[el.dataset.snd]) SND[el.dataset.snd](AC.currentTime);
+    const r = wrap.getBoundingClientRect();
+    const b = document.createElement('div');
+    b.className = 'bubble'; b.textContent = el.dataset.msg || '';
+    b.style.left = (ev.clientX - r.left) + 'px'; b.style.top = (ev.clientY - r.top - 30) + 'px';
+    wrap.appendChild(b); setTimeout(function() { b.remove(); }, 1200);
+    const tgt = el.classList.contains('bob') || el.querySelector('.bob') ? el : el;
+    const inner = el.classList.contains('bob') ? el : (el.querySelector('.sway, .hop, .wobble, .rays') || el);
+    inner.classList.remove('pop'); void inner.getBoundingClientRect(); inner.classList.add('pop');
+    inner.addEventListener('animationend', function h(e) { if (e.animationName === 'pop') { inner.classList.remove('pop'); inner.removeEventListener('animationend', h); } });
+  });
+});
+</script>
+</body></html>
+"""
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -172,11 +379,7 @@ if not st.session_state.authenticated:
     st.markdown("<h1 style='text-align: center; color: #3A0056;'>🌷 Perencanaan Geometrik Jalan Interaktif</h1>", unsafe_allow_html=True)
     st.markdown("<h4 style='text-align: center; color: #880E4F;'>Standar TPGJAK 1997 / RAE 2021</h4>", unsafe_allow_html=True)
     
-    st.image(
-        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=1200&auto=format&fit=crop",
-        caption="Sistem Geometri Jalan Interaktif (Tulip Edition)",
-        use_container_width=True
-    )
+    components.html(HERO_HTML, height=470, scrolling=False)
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
