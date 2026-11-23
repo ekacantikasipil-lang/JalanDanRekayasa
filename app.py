@@ -365,6 +365,67 @@ document.querySelectorAll('.clk').forEach(function(el) {
 </body></html>
 """
 
+CLICK_SND_JS = r"""
+(function () {
+  if (window.__clickSndInstalled) return;
+  window.__clickSndInstalled = true;
+  var AC = null;
+  function ensure() {
+    try {
+      if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state === 'suspended') AC.resume();
+    } catch (e) { AC = null; }
+    return AC;
+  }
+  function noise(sec) {
+    var b = AC.createBuffer(1, Math.floor(AC.sampleRate * sec), AC.sampleRate);
+    var d = b.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  }
+  function tone(f, t, dur, type, vol, f2) {
+    var o = AC.createOscillator(); o.type = type;
+    o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    var g = AC.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function tick(t, f) {
+    tone(f, t, 0.06, 'square', 0.12, f * 0.5);
+    var s = AC.createBufferSource(); s.buffer = noise(0.04);
+    var hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+    var g = AC.createGain();
+    g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    s.connect(hp); hp.connect(g); g.connect(AC.destination); s.start(t);
+  }
+  function sndEnter(t) { tick(t, 900); [523, 659, 784, 1047].forEach(function (f, i) { tone(f, t + 0.08 + i * 0.07, 0.25, 'triangle', 0.18); }); }
+  function sndLeave(t) { tick(t, 700); [784, 659, 523].forEach(function (f, i) { tone(f, t + 0.08 + i * 0.08, 0.22, 'triangle', 0.16); }); }
+  function sndTab(t) { tick(t, 1200); tone(660, t + 0.03, 0.14, 'sine', 0.14, 990); }
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('button') : null;
+    if (!b || !ensure()) return;
+    var t = AC.currentTime, txt = b.textContent || '';
+    if (b.getAttribute('role') === 'tab') sndTab(t);
+    else if (/Masuk/i.test(txt)) sndEnter(t);
+    else if (/Keluar|Logout/i.test(txt)) sndLeave(t);
+    else tick(t, 900);
+  }, true);
+})();
+"""
+
+# Suara klik untuk tombol & tab (dipasang ke halaman utama Streamlit satu kali)
+components.html(
+    "<script>(function(){var code = " + json.dumps(CLICK_SND_JS) + ";"
+    "try { var P = window.parent; if (!P.__clickSndInstalled) {"
+    "var s = P.document.createElement('script'); s.textContent = code; P.document.head.appendChild(s); }"
+    "} catch (e) { try { (new Function(code))(); } catch (e2) {} }"
+    "})();</script>",
+    height=0,
+)
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
