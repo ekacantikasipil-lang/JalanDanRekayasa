@@ -1,6 +1,6 @@
 """
 ==============================================================================
-GEOJAL - SISTEM PERENCANAAN GEOMETRIK JALAN TERPADU & SIMULATOR 3D
+🌷 GEOMETRI JALAN INTERAKTIF - TULIP EDITION
 Standar Acuan: TPGJAK Bina Marga 1997 / Pedoman Desain Geometrik Jalan RAE 2021
 ==============================================================================
 """
@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 import matplotlib.pyplot as plt
@@ -26,441 +25,226 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 
 # ----------------------------------------------------------------------------
-# 1. KONFIGURASI HALAMAN STREAMLIT & MANAJEMEN TEMA
+# 1. KONFIGURASI HALAMAN STREAMLIT & TEMA TULIP EDITION
 # ----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="GEOJAL - Perencanaan Geometrik Jalan & BIM 3D",
+    page_title="Geometri Jalan Interaktif - Tulip Edition",
     layout="wide",
-    page_icon="🛣️",
+    page_icon="🌷",
     initial_sidebar_state="expanded"
 )
 
-# Inisialisasi status sesi
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+    
+    .stApp {
+        background: linear-gradient(135deg, #fff9e6 0%, #ffe6f0 50%, #e8f4f8 100%);
+        color: #2D3142;
+        font-family: 'Poppins', sans-serif;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: rgba(255, 235, 243, 0.98) !important;
+        border-right: 2px solid #F8BBD0;
+    }
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3, 
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span {
+        color: #3A0056 !important;
+        font-weight: 700 !important;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #FFFFFF !important;
+        border-radius: 15px;
+        padding: 8px;
+        border: 2px solid #F48FB1;
+        box-shadow: 0 4px 12px rgba(136, 14, 79, 0.08);
+        gap: 6px;
+    }
+    .stTabs [data-baseweb="tab"],
+    .stTabs [data-baseweb="tab"] p,
+    .stTabs [data-baseweb="tab"] span,
+    .stTabs button[role="tab"],
+    .stTabs button[role="tab"] p {
+        color: #880E4F !important;
+        font-weight: 800 !important;
+        font-size: 14.5px !important;
+        border-radius: 10px;
+        padding: 8px 16px;
+        background-color: transparent !important;
+    }
+    .stTabs [data-baseweb="tab"]:hover,
+    .stTabs button[role="tab"]:hover {
+        background-color: #FCE4EC !important;
+        color: #AD1457 !important;
+    }
+    .stTabs [aria-selected="true"],
+    .stTabs button[aria-selected="true"] {
+        background: linear-gradient(45deg, #AD1457, #D81B60) !important;
+        box-shadow: 0px 4px 12px rgba(173, 20, 87, 0.35);
+    }
+    .stTabs [aria-selected="true"] p,
+    .stTabs [aria-selected="true"] span,
+    .stTabs button[aria-selected="true"] p {
+        color: #FFFFFF !important;
+    }
+    div[data-baseweb="input"] {
+        background-color: #FFFFFF !important;
+        border-radius: 10px;
+        color: #111111 !important;
+        border: 1.5px solid #F48FB1 !important;
+    }
+    .stButton>button {
+        background: linear-gradient(45deg, #C2185B, #E91E63);
+        color: white !important;
+        border: none;
+        border-radius: 12px;
+        font-weight: bold;
+        box-shadow: 0px 4px 10px rgba(194, 24, 91, 0.3);
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(45deg, #880E4F, #C2185B);
+        transform: translateY(-2px);
+        box-shadow: 0px 6px 14px rgba(136, 14, 79, 0.4);
+    }
+    
+    /* KPI Card Tulip Edition */
+    .kpi-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+    .kpi-card {
+        background: #FFFFFF;
+        border: 1.5px solid #F48FB1;
+        border-radius: 14px;
+        padding: 14px 16px;
+        text-align: left;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(136, 14, 79, 0.07);
+    }
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 3.5px;
+        background: linear-gradient(90deg, #C2185B, #E91E63);
+    }
+    .kpi-title {
+        font-size: 11px;
+        font-weight: 800;
+        color: #880E4F;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 4px;
+    }
+    .kpi-value {
+        font-size: 21px;
+        font-weight: 800;
+        color: #3A0056;
+        font-family: 'JetBrains Mono', monospace;
+        line-height: 1.2;
+    }
+    .kpi-sub {
+        font-size: 11px;
+        color: #AD1457;
+        margin-top: 3px;
+        font-weight: 600;
+    }
+    
+    .tulip-card {
+        background: #FFFFFF;
+        border: 1.5px solid #F48FB1;
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 4px 16px rgba(136, 14, 79, 0.06);
+        margin-bottom: 18px;
+    }
+    
+    /* Status Cards */
+    .status-card {
+        padding: 15px;
+        border-radius: 14px;
+        margin-bottom: 15px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .status-oke {
+        background-color: rgba(200, 230, 201, 0.98);
+        color: #1B5E20;
+        border: 2px solid #81C784;
+    }
+    .status-sedang {
+        background-color: rgba(255, 245, 157, 0.98);
+        color: #E65100;
+        border: 2px solid #FFF176;
+    }
+    .status-bahaya {
+        background-color: rgba(255, 205, 210, 0.98);
+        color: #B71C1C;
+        border: 2px solid #E57373;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ----------------------------------------------------------------------------
+# 2. KEAMANAN & PORTAL LOGIN TULIP
+# ----------------------------------------------------------------------------
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
-if "theme" not in st.session_state:
-    st.session_state.theme = "Civil Dark BIM (Rekomendasi)"
 
-# Definisi CSS Tema Modern (Gak Monoton, High-Tech, dan Profesional)
-THEME_CSS = {
-    "Civil Dark BIM (Rekomendasi)": """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
-        
-        .stApp {
-            background: radial-gradient(circle at 10% 20%, #0d1527 0%, #070b14 90%);
-            color: #E2E8F0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        
-        /* Sidebar Modern Slate */
-        section[data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #0e172a 0%, #090e1c 100%) !important;
-            border-right: 1px solid rgba(56, 189, 248, 0.2);
-            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
-        }
-        section[data-testid="stSidebar"] h1, 
-        section[data-testid="stSidebar"] h2, 
-        section[data-testid="stSidebar"] h3, 
-        section[data-testid="stSidebar"] label,
-        section[data-testid="stSidebar"] p,
-        section[data-testid="stSidebar"] span {
-            color: #F1F5F9 !important;
-        }
-        
-        /* Modern Glass Card */
-        .glass-card {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(56, 189, 248, 0.25);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-            transition: all 0.3s ease;
-        }
-        .glass-card:hover {
-            border-color: rgba(56, 189, 248, 0.5);
-            box-shadow: 0 12px 40px rgba(14, 165, 233, 0.15);
-        }
-
-        /* KPI Metric Cards */
-        .kpi-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .kpi-card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 14px;
-            padding: 16px;
-            text-align: left;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-        }
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 3px;
-            background: linear-gradient(90deg, #06B6D4, #3B82F6);
-        }
-        .kpi-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #94A3B8;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 6px;
-        }
-        .kpi-value {
-            font-size: 22px;
-            font-weight: 800;
-            color: #F8FAFC;
-            font-family: 'JetBrains Mono', monospace;
-            line-height: 1.2;
-        }
-        .kpi-sub {
-            font-size: 11px;
-            color: #38BDF8;
-            margin-top: 4px;
-            font-weight: 500;
-        }
-
-        /* Tabs Modern High-Tech */
-        .stTabs [data-baseweb="tab-list"] {
-            background: rgba(15, 23, 42, 0.85) !important;
-            border-radius: 14px;
-            padding: 6px;
-            border: 1px solid rgba(56, 189, 248, 0.25);
-            gap: 8px;
-        }
-        .stTabs [data-baseweb="tab"],
-        .stTabs button[role="tab"] {
-            color: #94A3B8 !important;
-            font-weight: 600 !important;
-            font-size: 13.5px !important;
-            border-radius: 10px;
-            padding: 9px 18px;
-            background-color: transparent !important;
-            border: none !important;
-            transition: all 0.2s ease;
-        }
-        .stTabs [data-baseweb="tab"]:hover,
-        .stTabs button[role="tab"]:hover {
-            color: #38BDF8 !important;
-            background: rgba(56, 189, 248, 0.1) !important;
-        }
-        .stTabs [aria-selected="true"],
-        .stTabs button[aria-selected="true"] {
-            background: linear-gradient(135deg, #0284C7, #2563EB) !important;
-            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
-            color: #FFFFFF !important;
-        }
-        .stTabs [aria-selected="true"] p,
-        .stTabs button[aria-selected="true"] p {
-            color: #FFFFFF !important;
-            font-weight: 700 !important;
-        }
-
-        /* Inputs & Buttons */
-        div[data-baseweb="input"] {
-            background-color: #1E293B !important;
-            border-radius: 10px;
-            color: #F8FAFC !important;
-            border: 1px solid rgba(148, 163, 184, 0.3) !important;
-        }
-        .stButton>button {
-            background: linear-gradient(135deg, #0EA5E9, #2563EB);
-            color: white !important;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            padding: 10px 20px;
-            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
-            transition: all 0.25s ease;
-        }
-        .stButton>button:hover {
-            background: linear-gradient(135deg, #0284C7, #1D4ED8);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
-        }
-
-        /* Status Badges */
-        .badge-safe {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid #10B981;
-            color: #34D399;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-        .badge-warn {
-            background: rgba(245, 158, 11, 0.15);
-            border: 1px solid #F59E0B;
-            color: #FBBF24;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-        .badge-danger {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid #EF4444;
-            color: #F87171;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-    </style>
-    """,
-    "Civil Modern Light": """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
-        
-        .stApp {
-            background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 50%, #F1F5F9 100%);
-            color: #0F172A;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        section[data-testid="stSidebar"] {
-            background: #FFFFFF !important;
-            border-right: 1px solid #CBD5E1;
-            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.05);
-        }
-        section[data-testid="stSidebar"] h1, 
-        section[data-testid="stSidebar"] h2, 
-        section[data-testid="stSidebar"] h3, 
-        section[data-testid="stSidebar"] label,
-        section[data-testid="stSidebar"] p,
-        section[data-testid="stSidebar"] span {
-            color: #1E293B !important;
-            font-weight: 600 !important;
-        }
-        .glass-card {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        }
-        .kpi-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .kpi-card {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 14px;
-            padding: 16px;
-            text-align: left;
-            position: relative;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-        }
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 3px;
-            background: linear-gradient(90deg, #0284C7, #2563EB);
-        }
-        .kpi-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #64748B;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 6px;
-        }
-        .kpi-value {
-            font-size: 22px;
-            font-weight: 800;
-            color: #0F172A;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .kpi-sub {
-            font-size: 11px;
-            color: #0284C7;
-            margin-top: 4px;
-            font-weight: 600;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            background: #F1F5F9 !important;
-            border-radius: 14px;
-            padding: 6px;
-            border: 1px solid #E2E8F0;
-            gap: 8px;
-        }
-        .stTabs [data-baseweb="tab"],
-        .stTabs button[role="tab"] {
-            color: #475569 !important;
-            font-weight: 600 !important;
-            font-size: 13.5px !important;
-            border-radius: 10px;
-            padding: 9px 18px;
-            background-color: transparent !important;
-            border: none !important;
-        }
-        .stTabs [aria-selected="true"],
-        .stTabs button[aria-selected="true"] {
-            background: #0284C7 !important;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
-            color: #FFFFFF !important;
-        }
-        .stTabs [aria-selected="true"] p,
-        .stTabs button[aria-selected="true"] p {
-            color: #FFFFFF !important;
-        }
-        .stButton>button {
-            background: linear-gradient(135deg, #0284C7, #1D4ED8);
-            color: white !important;
-            border-radius: 10px;
-            font-weight: 700;
-        }
-        .badge-safe {
-            background: #ECFDF5;
-            border: 1.5px solid #10B981;
-            color: #065F46;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-        .badge-warn {
-            background: #FFFBEB;
-            border: 1.5px solid #F59E0B;
-            color: #92400E;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-        .badge-danger {
-            background: #FEF2F2;
-            border: 1.5px solid #EF4444;
-            color: #991B1B;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-    </style>
-    """,
-    "Tulip Edition Pastel": """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-        .stApp {
-            background: linear-gradient(135deg, #fff9e6 0%, #ffe6f0 50%, #e8f4f8 100%);
-            color: #2D3142;
-            font-family: 'Poppins', sans-serif;
-        }
-        section[data-testid="stSidebar"] {
-            background-color: rgba(255, 235, 243, 0.98) !important;
-            border-right: 2px solid #F8BBD0;
-        }
-        section[data-testid="stSidebar"] h1, 
-        section[data-testid="stSidebar"] h2, 
-        section[data-testid="stSidebar"] h3, 
-        section[data-testid="stSidebar"] label,
-        section[data-testid="stSidebar"] p,
-        section[data-testid="stSidebar"] span {
-            color: #3A0056 !important;
-            font-weight: 700 !important;
-        }
-        .kpi-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .kpi-card {
-            background: #FFFFFF;
-            border: 1.5px solid #F48FB1;
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(136, 14, 79, 0.06);
-        }
-        .kpi-title { font-size: 11px; font-weight: 700; color: #880E4F; }
-        .kpi-value { font-size: 22px; font-weight: 800; color: #3A0056; }
-        .kpi-sub { font-size: 11px; color: #AD1457; font-weight: 600; }
-        .stTabs [data-baseweb="tab-list"] {
-            background-color: #FFFFFF !important;
-            border-radius: 15px;
-            padding: 8px;
-            border: 2px solid #F48FB1;
-        }
-        .stTabs [data-baseweb="tab"],
-        .stTabs button[role="tab"] {
-            color: #880E4F !important;
-            font-weight: 700 !important;
-        }
-        .stTabs [aria-selected="true"],
-        .stTabs button[aria-selected="true"] {
-            background: linear-gradient(45deg, #AD1457, #D81B60) !important;
-            color: #FFFFFF !important;
-        }
-        .stButton>button {
-            background: linear-gradient(45deg, #C2185B, #E91E63);
-            color: white !important;
-            border-radius: 12px;
-            font-weight: bold;
-        }
-        .badge-safe {
-            background: #E8F5E9; border: 1.5px solid #4CAF50; color: #1B5E20; padding: 12px; border-radius: 12px;
-        }
-        .badge-warn {
-            background: #FFFDE7; border: 1.5px solid #FFD54F; color: #E65100; padding: 12px; border-radius: 12px;
-        }
-        .badge-danger {
-            background: #FFEBEE; border: 1.5px solid #E57373; color: #B71C1C; padding: 12px; border-radius: 12px;
-        }
-    </style>
-    """
-}
-
-st.markdown(THEME_CSS[st.session_state.theme], unsafe_allow_html=True)
-
-# ----------------------------------------------------------------------------
-# 2. HALAMAN LOGIN / GERBANG AKSES MODERN
-# ----------------------------------------------------------------------------
 if not st.session_state.authenticated:
-    col_auth_left, col_auth_center, col_auth_right = st.columns([1, 2, 1])
-    with col_auth_center:
-        st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <div style="font-size: 54px; margin-bottom: 10px;">🛣️</div>
-            <h1 style="font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px;">GEOJAL ENTERPRISE</h1>
-            <p style="font-size: 14px; opacity: 0.8; margin-top: 4px;">Sistem Analisis Geometrik Jalan & BIM Simulator 3D</p>
-            <span style="background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38BDF8; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700;">
-                STANDAR BINA MARGA TPGJAK 1997 / RAE 2021
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        with st.container():
-            st.markdown("""
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; text-align: center;">
-                💡 <b>Petunjuk Password Akses:</b> <code style="color: #38BDF8; font-weight: bold; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">cantikaaa27</code>
+    col_top1, col_top2 = st.columns([4, 1])
+    with col_top2:
+        st.markdown(
+            "<p style='text-align: right; font-size: 13px; color: #880E4F; margin: 0;'>pw: "
+            "<span style='font-family: monospace; font-weight: bold; color: #C2185B;'>cantikaaa27</span></p>",
+            unsafe_allow_html=True
+        )
+    st.markdown("<h1 style='text-align: center; color: #3A0056;'>🌷 Perencanaan Geometrik Jalan Interaktif</h1>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #880E4F;'>Standar TPGJAK 1997 / RAE 2021</h4>", unsafe_allow_html=True)
+    
+    st.image(
+        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=1200&auto=format&fit=crop",
+        caption="Sistem Geometri Jalan Interaktif (Tulip Edition)",
+        use_container_width=True
+    )
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(
+            """
+            <div style="background-color: #FCE4EC; border: 1.5px solid #F48FB1; border-radius: 10px; 
+                        padding: 12px 16px; margin-bottom: 12px; color: #880E4F; font-size: 14px; text-align: center;">
+                💡 <b>Petunjuk password:</b> lihat bagian pojok kanan atas (<b style="color: #C2185B;">cantikaaa27</b>)
             </div>
-            """, unsafe_allow_html=True)
-            
-            pwd_input = st.text_input("Kunci Keamanan / Password:", type="password", placeholder="Masukkan password akses...")
-            
-            col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                if st.button("Masuk Aplikasi 🚀", use_container_width=True):
-                    if pwd_input.strip() == "cantikaaa27":
-                        st.session_state.authenticated = True
-                        st.rerun()
-                    else:
-                        st.error("❌ Password salah! Silakan gunakan password pada petunjuk di atas.")
-            with col_b2:
-                if st.button("Akses Cepat (Demo / Dosen) ⚡", use_container_width=True):
+            """,
+            unsafe_allow_html=True
+        )
+        st.markdown("<p style='color: #3A0056; font-weight: 700; margin-bottom: 4px;'>Masukkan Password Akses:</p>", unsafe_allow_html=True)
+        pwd_input = st.text_input(
+            "Masukkan Password Akses:",
+            type="password",
+            placeholder="Ketik password di sini...",
+            label_visibility="collapsed"
+        )
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("Masuk Aplikasi 🚀", use_container_width=True):
+                if pwd_input.strip() == "cantikaaa27":
                     st.session_state.authenticated = True
                     st.rerun()
-                    
-        st.markdown("<p style='text-align: center; font-size: 12px; opacity: 0.6; margin-top: 30px;'>Laboratorium Rekayasa Jalan Raya & Transportasi © 2026</p>", unsafe_allow_html=True)
+                else:
+                    st.error("❌ Password salah! Silakan periksa kembali tulisan di pojok kanan atas.")
+        with col_btn2:
+            if st.button("Akses Cepat (Demo) ⚡", use_container_width=True):
+                st.session_state.authenticated = True
+                st.rerun()
     st.stop()
 
 # ----------------------------------------------------------------------------
@@ -468,31 +252,25 @@ if not st.session_state.authenticated:
 # ----------------------------------------------------------------------------
 V_TAB = [20, 30, 40, 50, 60, 80, 100, 120]
 R_FC_TAB = [60, 130, 250, 350, 500, 900, 1500, 2500]
-G_MAX_TAB = [10, 10, 10, 9, 8, 6, 5, 3]
 
 def sta_str(s: float, d: int = 2) -> str:
-    """Format Stasioning Teknik Sipil (misal 0+250.00)"""
     sign = "-" if s < 0 else ""
     s_abs = abs(s)
     return f"{sign}{int(s_abs // 1000)}+{s_abs % 1000:0{4 + d}.{d}f}"
 
 def f_max(V: float) -> float:
-    """Koefisien gesek melintang maksimum TPGJAK"""
     return -0.00065 * V + 0.192 if V < 80 else -0.00125 * V + 0.24
 
 def r_min(V: float, emax: float) -> float:
-    """Jari-jari tikungan minimum tanpa kelonggaran"""
     return V**2 / (127 * (emax + f_max(V)))
 
 def hitung_tikungan(V: float, delta: float, emax: float, en: float, Rc: float, sta_pi: float):
-    """Kalkulator Tikungan Lengkap: Full Circle, Spiral-Circle-Spiral, Spiral-Spiral"""
     fm = f_max(V)
     Rmin = r_min(V, emax)
     Dmax = 181913.53 * (emax + fm) / (V**2)
     D = 1432.39 / Rc
     e = -emax * (D**2) / (Dmax**2) + 2 * emax * D / Dmax
     e = max(e, en)
-    
     re = 0.035 if V <= 70 else 0.025
     Ls_waktu = V * 3 / 3.6
     Ls_shortt = 0.022 * (V**3) / (Rc * 0.4) - 2.727 * V * e / 0.4
@@ -507,7 +285,6 @@ def hitung_tikungan(V: float, delta: float, emax: float, en: float, Rc: float, s
         Dmax=Dmax, D=D, e=e, Ls_waktu=Ls_waktu, Ls_shortt=Ls_shortt,
         Ls_re=Ls_re, Ls_min=Ls_min, R_fc=R_fc, sta_pi=sta_pi, Ls_pakai=Ls_pakai
     )
-    
     if Rc >= R_fc:
         Tc = Rc * math.tan(d2)
         Ec = Tc * math.tan(d2 / 2)
@@ -528,7 +305,6 @@ def hitung_tikungan(V: float, delta: float, emax: float, en: float, Rc: float, s
             ths = delta / 2
             Ls = math.radians(ths) * 2 * Rc
             Lc, dc = 0.0, 0.0
-            
         Xs = Ls * (1 - Ls**2 / (40 * Rc**2))
         Ys = (Ls**2) / (6 * Rc)
         p = Ys - Rc * (1 - math.cos(math.radians(ths)))
@@ -539,7 +315,6 @@ def hitung_tikungan(V: float, delta: float, emax: float, en: float, Rc: float, s
             jenis=jenis, Ls=Ls, Ls_sup=Ls, ths=ths, dc=dc, Lc=Lc, T=Ts,
             E=Es, Xs=Xs, Ys=Ys, p=p, k=k
         )
-        
     res["Ltot"] = res["Lc"] + 2 * res["Ls"]
     res["sta_awal"] = sta_pi - res["T"]
     res["sta_akhir"] = res["sta_awal"] + res["Ltot"]
@@ -547,7 +322,6 @@ def hitung_tikungan(V: float, delta: float, emax: float, en: float, Rc: float, s
     return res
 
 def heading(s, Ls, Lc, Rc, dl):
-    """Menghitung sudut azimuth lintasan spiral dan busur lingkaran"""
     Ltot = 2 * Ls + Lc
     th = np.zeros_like(s)
     if Ls > 0:
@@ -565,7 +339,6 @@ def heading(s, Ls, Lc, Rc, dl):
     return th
 
 def hitung_profil(pvi_df, V):
-    """Menghitung kelandaian dan lengkung vertikal (Cembung/Cekung)"""
     d = pvi_df.dropna().sort_values(pvi_df.columns[0]).reset_index(drop=True)
     if len(d) < 2:
         return None
@@ -575,7 +348,6 @@ def hitung_profil(pvi_df, V):
     g = np.diff(el) / np.diff(sta)
     Jh = 0.278 * V * 2.5 + (V**2) / (254 * 0.40)
     kurva = []
-    
     for i in range(1, len(sta) - 1):
         A = (g[i] - g[i - 1]) * 100
         if abs(A) < 1e-9:
@@ -589,7 +361,7 @@ def hitung_profil(pvi_df, V):
             L = a * (Jh**2) / (120 + 3.5 * Jh)
             if L < Jh:
                 L = 2 * Jh - (120 + 3.5 * Jh) / a
-                
+        
         L = math.ceil(max(L, 0.6 * V, V * 3 / 3.6) / 10) * 10
         if lvm[i] > 0:
             L = lvm[i]
@@ -600,7 +372,6 @@ def hitung_profil(pvi_df, V):
             jenis="Cembung" if A < 0 else "Cekung",
             g1=g[i - 1], g2=g[i]
         ))
-        
     x = np.arange(sta[0], sta[-1] + 0.01, 1.0)
     y = np.interp(x, sta, el)
     for k in kurva:
@@ -612,48 +383,35 @@ def hitung_profil(pvi_df, V):
     return dict(sta=sta, el=el, g=g * 100, kurva=kurva, x=x, y=y, Jh=Jh)
 
 # ----------------------------------------------------------------------------
-# 4. SIDEBAR INPUT & KONTROL PARAMETER
+# 4. SIDEBAR INPUT & KONTROL
 # ----------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("<h2 style='margin-bottom: 2px;'>⚙️ Kontrol & Parameter</h2>", unsafe_allow_html=True)
-    st.caption("Pusat Kendali Perencanaan Jalan")
-    
-    # Theme Selector
-    theme_choice = st.selectbox("🎨 Mode Tampilan / Tema:", list(THEME_CSS.keys()), index=list(THEME_CSS.keys()).index(st.session_state.theme))
-    if theme_choice != st.session_state.theme:
-        st.session_state.theme = theme_choice
+    st.markdown("<h2 style='color: #3A0056;'>⚙️ Parameter Rencana</h2>", unsafe_allow_html=True)
+    if st.button("🚪 Keluar / Logout", use_container_width=True):
+        st.session_state.authenticated = False
         st.rerun()
         
     st.markdown("---")
-    st.subheader("1. Kriteria Rencana")
-    V = st.number_input("Kecepatan Rencana Vr (km/jam)", 20, 120, 60, 10, help="Kecepatan desain berdasarkan fungsi jalan")
-    delta = st.number_input("Sudut Tikungan Δ (°)", 1.0, 179.0, 45.0, 0.5, help="Sudut defleksi tangen tikungan")
+    st.subheader("1. Kriteria Desain")
+    V = st.number_input("Kecepatan Rencana Vr (km/jam)", 20, 120, 60, 10)
+    v_sim = st.number_input("Kecepatan Kendaraan Simulasi (km/jam)", 10, 150, 65, 5)
+    delta = st.number_input("Sudut Tikungan Δ (°)", 1.0, 179.0, 45.0, 0.5)
     emax = st.number_input("e maks (%)", 4.0, 12.0, 10.0, 0.5) / 100
     en = st.number_input("Kemiringan Normal en (%)", 1.0, 4.0, 2.0, 0.5) / 100
     
     Rmin = r_min(V, emax)
-    st.info(f"📏 **R minimum TPGJAK:** `{Rmin:.2f} m`")
-    
+    st.caption(f"ℹ️ *R minimum acuan TPGJAK = {Rmin:.2f} m*")
     mode = st.radio("Jari-jari Tikungan Rc", ["Otomatis (Dibulatkan)", "Manual Input"], horizontal=True)
     if mode.startswith("Oto"):
         Rc = float(math.ceil(Rmin / 10) * 10)
     else:
-        Rc = st.number_input("Rc Rencana (m)", 10.0, 5000.0, max(150.0, float(math.ceil(Rmin / 10) * 10)), 5.0)
+        Rc = st.number_input("Rc (m)", 10.0, 5000.0, max(150.0, float(math.ceil(Rmin / 10) * 10)), 5.0)
         
-    sta_pi = st.number_input("STA Titik PI (m)", 0.0, 100000.0, 300.0, 10.0)
+    sta_pi = st.number_input("STA PI (m)", 0.0, 100000.0, 300.0, 10.0)
     arah = st.radio("Arah Tikungan", ["Kiri", "Kanan"], horizontal=True)
-    B = st.number_input("Lebar Perkerasan B (m)", 3.0, 30.0, 7.0, 0.5)
+    B = st.number_input("Lebar Perkerasan Jalan B (m)", 3.0, 30.0, 7.0, 0.5)
     Bahu = st.number_input("Lebar Bahu Jalan (m)", 0.5, 5.0, 1.5, 0.25)
-    
-    st.markdown("---")
-    st.subheader("2. Simulator Kecepatan")
-    v_sim = st.slider("Kecepatan Uji Mobil (km/jam)", 10, 140, int(V), 5)
-    
-    if st.button("🚪 Keluar / Ganti Akun", use_container_width=True):
-        st.session_state.authenticated = False
-        st.rerun()
 
-# Eksekusi Hitungan Tikungan
 r = hitung_tikungan(V, delta, emax, en, Rc, sta_pi)
 sg = 1 if arah == "Kiri" else -1
 Ls, Lc = r["Ls"], r["Lc"]
@@ -670,7 +428,6 @@ x_horiz, y_horiz = x_horiz - x_horiz[i0], (y_horiz - y_horiz[i0]) * sg
 ths_ = th_vals * sg
 nx, ny = -np.sin(ths_), np.cos(ths_)
 
-# Session state untuk Profil Vertikal jika belum ada
 if "pvi_df" not in st.session_state:
     st.session_state.pvi_df = pd.DataFrame({
         "STA (m)": [0.0, 250.0, 500.0, 750.0],
@@ -690,22 +447,11 @@ else:
     z_elev = np.zeros_like(s_vals)
 
 # ----------------------------------------------------------------------------
-# 5. HEADER DASHBOARD & KPI EXECUTIVE METRICS
+# 5. HEADER UTAMA & KPI EXECUTIVE CARDS (TULIP EDITION)
 # ----------------------------------------------------------------------------
-st.markdown("""
-<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-    <div>
-        <h1 style="font-size: 26px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 10px;">
-            <span>🛣️</span> GEOJAL — Highway Geometric Suite
-        </h1>
-        <p style="margin: 4px 0 0 0; opacity: 0.75; font-size: 13.5px;">
-            Perancangan Trase Horizontal, Superelevasi, Profil Memanjang, Visualisasi CAD Skalatis & Simulator 3D
-        </p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("<h1 style='color: #3A0056; text-align: center; font-weight: 800; margin-bottom: 2px;'>🌸 Geometri Jalan Interaktif & Simulasi 3D</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #880E4F; font-weight: 600; margin-bottom: 20px;'>Standar TPGJAK Bina Marga 1997 / Pedoman Desain Geometrik Jalan RAE 2021</p>", unsafe_allow_html=True)
 
-# Render KPI Badges Bar
 fc_flag = r["jenis"].startswith("Full")
 lbl_start = "TC" if fc_flag else "TS"
 lbl_end = "CT" if fc_flag else "ST"
@@ -714,11 +460,11 @@ kpi_html = f"""
 <div class="kpi-container">
     <div class="kpi-card">
         <div class="kpi-title">Jenis Tikungan</div>
-        <div class="kpi-value" style="font-size: 17px; color: #38BDF8;">{r['jenis']}</div>
+        <div class="kpi-value" style="font-size: 16px; color: #C2185B;">{r['jenis']}</div>
         <div class="kpi-sub">Arah: Belok {arah}</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-title">Kecepatan Rencana / Aman</div>
+        <div class="kpi-title">Kecepatan Vr / Aman</div>
         <div class="kpi-value">{r['V']:.0f} <span style="font-size: 14px;">km/h</span></div>
         <div class="kpi-sub">Vaman: {r['v_safe']:.1f} km/jam</div>
     </div>
@@ -747,10 +493,9 @@ kpi_html = f"""
 st.markdown(kpi_html, unsafe_allow_html=True)
 
 # ----------------------------------------------------------------------------
-# 6. ENGINE RENDER GAMBAR CAD HITAM-PUTIH SKALATIS & DOKUMEN WORD (.DOCX)
+# 6. ENGINE RENDER GAMBAR CAD SKALATIS & WORD (.DOCX)
 # ----------------------------------------------------------------------------
 def draw_dim_line(ax, p1, p2, label, offset_vec=(0.0, 0.0), text_offset=(0.0, 0.0), fontsize=7.5):
-    """Garis dimensi CAD standar dengan tanda panah ganda dan teks dimensi."""
     q1 = (p1[0] + offset_vec[0], p1[1] + offset_vec[1])
     q2 = (p2[0] + offset_vec[0], p2[1] + offset_vec[1])
     ax.plot([p1[0], q1[0]], [p1[1], q1[1]], color='#000000', linewidth=0.55, zorder=4)
@@ -776,7 +521,6 @@ def draw_dim_line(ax, p1, p2, label, offset_vec=(0.0, 0.0), text_offset=(0.0, 0.
     )
 
 def render_cad_denah_bw(r, B, arah, draw_w_mm=330.0, draw_h_mm=277.0):
-    """Gambar 1: Denah Trase CAD Skalatis Hitam-Putih dengan Skala Grafis."""
     Rc = r["Rc"]
     Ls = r["Ls"]
     Lc = r["Lc"]
@@ -886,19 +630,16 @@ def render_cad_denah_bw(r, B, arah, draw_w_mm=330.0, draw_h_mm=277.0):
     ax.set_aspect('equal', adjustable='box')
     ax.axis('off')
 
-    # Garis Tangen
     ax.plot([p_tan_start[0], p_PI[0]], [p_tan_start[1], p_PI[1]], color='#000000', linewidth=0.9, zorder=3)
     ax.plot([p_PI[0], p_tan_end[0]], [p_PI[1], p_tan_end[1]], color='#000000', linewidth=0.9, zorder=3)
     ext_pi = 0.14 * Ts
     p_PI_ext = p_PI + ext_pi * u_in
     ax.plot([p_PI[0], p_PI_ext[0]], [p_PI[1], p_PI_ext[1]], color='#000000', linewidth=0.75, zorder=3)
 
-    # Kurva Utama
     ax.plot(curve_x, curve_y, color='#000000', linewidth=1.6, zorder=4)
     if len(arc_ext_x) > 0:
         ax.plot(arc_ext_x, arc_ext_y, color='#000000', linewidth=0.75, linestyle='--', zorder=3)
 
-    # Garis Hubung ke Pusat Busur O
     ax.plot([p_O[0], p_PI[0]], [p_O[1], p_PI[1]], color='#000000', linewidth=0.75, zorder=3)
     if not fc:
         ax.plot([p_O[0], p_SC[0]], [p_O[1], p_SC[1]], color='#000000', linewidth=0.75, zorder=3)
@@ -936,7 +677,6 @@ def render_cad_denah_bw(r, B, arah, draw_w_mm=330.0, draw_h_mm=277.0):
         p_k_end = p_TS + k_val * u_in
         draw_dim_line(ax, p_TS, p_k_end, f"k = {k_val:.2f} m", offset_vec=tuple(out_dir * (0.95 * step_dim)), text_offset=tuple(out_dir * (0.014 * world_w_m)), fontsize=6.5)
 
-    # Skala Batang Grafis Fisik CAD
     bar_phys_mm = 40.0
     bar_real_m = (bar_phys_mm / 1000.0) * scale_denom
     sb_x0 = x_max_lim - bar_real_m - 0.03 * world_w_m
@@ -958,7 +698,6 @@ def render_cad_denah_bw(r, B, arah, draw_w_mm=330.0, draw_h_mm=277.0):
     return buf, scale_denom
 
 def render_cad_superelevasi_bw(r, draw_w_mm=330.0, draw_h_mm=277.0):
-    """Gambar 2: Diagram Superelevasi CAD Skalatis Horizontal."""
     e_des = r["e"] * 100.0
     en_val = r["en"] * 100.0
     ls_val = r["Ls_sup"]
@@ -1002,7 +741,6 @@ def render_cad_superelevasi_bw(r, draw_w_mm=330.0, draw_h_mm=277.0):
     ax.set_ylim(-y_lim, y_lim)
     ax.axis('off')
 
-    # Garis Nol & Garis Kemiringan Normal
     ax.plot([s_start - 0.04 * world_w_m, s_end + 0.04 * world_w_m], [0.0, 0.0], color='#000000', linestyle='-.', linewidth=0.85)
     ax.plot([s_start, s_end], [-en_val, -en_val], color='#000000', linestyle='--', linewidth=0.75)
 
@@ -1024,14 +762,12 @@ def render_cad_superelevasi_bw(r, draw_w_mm=330.0, draw_h_mm=277.0):
     ax.text(mid_lc, e_des + 0.035 * y_lim, f"e = {e_des:.2f} %", fontsize=7.5, fontweight='bold', ha='center', va='bottom', color='#000000')
     ax.text(mid_lc, -e_des - 0.035 * y_lim, f"-e = -{e_des:.2f} %", fontsize=7.5, fontweight='bold', ha='center', va='top', color='#000000')
 
-    # Dimensi Panjang Lengkung Bawah
     y_dim_b2 = -y_lim * 0.72
     draw_dim_line(ax, (s_start, y_dim_b2), (s_full1, y_dim_b2), f"LS = {ls_val:.2f} m", text_offset=(0, 0.035 * y_lim), fontsize=7)
     if lc_val > 0:
         draw_dim_line(ax, (s_full1, y_dim_b2), (s_full2, y_dim_b2), f"LC = {lc_val:.2f} m", text_offset=(0, 0.035 * y_lim), fontsize=7)
     draw_dim_line(ax, (s_full2, y_dim_b2), (s_end, y_dim_b2), f"LS = {ls_val:.2f} m", text_offset=(0, 0.035 * y_lim), fontsize=7)
 
-    # Skala Batang Grafis
     bar_phys_mm = 40.0
     bar_real_m = (bar_phys_mm / 1000.0) * scale_h
     sb_x0 = x_max_lim - bar_real_m - 0.02 * world_w_m
@@ -1057,7 +793,6 @@ def build_etiket_table_word(
     logo_text, catatan_text, kegiatan_text, pekerjaan_text, lokasi_text,
     diperiksa_text, digambar_text, judul_gambar, skala_str, tanggal_str, no_lembar, jml_lembar
 ):
-    """Membangun Etiket Gambar Standar Teknik Sipil di sisi kanan Word (Lebar 60mm)."""
     row_heights_mm = [37.5, 7.5, 50.0, 7.5, 15.0, 7.5, 15.0, 7.5, 15.0, 7.5, 27.5, 7.5, 27.5, 7.5, 17.5, 7.5, 12.0]
     et_tbl = parent_cell.add_table(rows=len(row_heights_mm), cols=6)
     et_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -1141,7 +876,6 @@ def build_etiket_table_word(
     put_txt(c_jm_b, jml_lembar, size_pt=7.0, bold=True)
 
 def generate_word_2_sheets_landscape(r, B, arah, meta):
-    """Membuat Dokumen Word A3 Landscape 2 Lembar Lengkap dengan Gambar CAD & Etiket."""
     page_w_mm, page_h_mm = 420.0, 297.0
     margin_left_mm, margin_other_mm = 20.0, 10.0
     inner_w_mm = page_w_mm - margin_left_mm - margin_other_mm
@@ -1232,16 +966,14 @@ def generate_word_2_sheets_landscape(r, B, arah, meta):
     return out_buf.getvalue(), scale1, scale2
 
 def generate_excel_bm2021(r, pvi_data):
-    """Menghasilkan Laporan Excel (.xlsx) Lengkap Berformula Sesuai Standar Bina Marga."""
     wb = openpyxl.Workbook()
     font_title = Font(name="Calibri", size=13, bold=True, color="FFFFFF")
-    font_sec = Font(name="Calibri", size=11, bold=True, color="1E3A8A")
-    font_reg = Font(name="Calibri", size=10, color="0F172A")
-    font_bold = Font(name="Calibri", size=10, bold=True, color="0F172A")
-    fill_header = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
-    fill_sec = PatternFill(start_color="E0E7FF", end_color="E0E7FF", fill_type="solid")
-    fill_accent = PatternFill(start_color="FEF08A", end_color="FEF08A", fill_type="solid")
-    thin = Side(style="thin", color="CBD5E1")
+    font_sec = Font(name="Calibri", size=11, bold=True, color="880E4F")
+    font_reg = Font(name="Calibri", size=10, color="2D3142")
+    font_bold = Font(name="Calibri", size=10, bold=True, color="2D3142")
+    fill_header = PatternFill(start_color="AD1457", end_color="AD1457", fill_type="solid")
+    fill_sec = PatternFill(start_color="FCE4EC", end_color="FCE4EC", fill_type="solid")
+    thin = Side(style="thin", color="F48FB1")
     border_cell = Border(left=thin, right=thin, top=thin, bottom=thin)
     align_c = Alignment(horizontal="center", vertical="center")
     align_l = Alignment(horizontal="left", vertical="center")
@@ -1310,70 +1042,66 @@ def generate_excel_bm2021(r, pvi_data):
 # ----------------------------------------------------------------------------
 # 7. TAB UTAMA APLIKASI
 # ----------------------------------------------------------------------------
-tab_denah, tab_super, tab_pot, tab_prof, tab_sim, tab_cad, tab_lap = st.tabs([
-    "🗺️ Denah Trase (2D)",
-    "📈 Superelevasi",
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "📍 Denah Tikungan (2D)", 
+    "📈 Diagram Superelevasi", 
     "📐 Potongan Melintang Interaktif",
     "⛰️ Profil Vertikal & Galian/Timbunan",
-    "🚘 Simulator 3D Kendaraan",
-    "📄 Gambar CAD Word (.DOCX)",
-    "📊 Laporan & Excel"
+    "🚘 Simulasi 3D Mobil Jalan", 
+    "📐 Gambar Kerja Word (Hitam Putih)",
+    "📋 Tabel Hitungan & Excel"
 ])
 
 # ----------------------------------------------------------------------------
-# TAB 1: DENAH TRASE 2D INTERAKTIF
+# TAB 1: DENAH TIKUNGAN 2D INTERAKTIF
 # ----------------------------------------------------------------------------
-with tab_denah:
-    st.markdown("### 🗺️ Visualisasi Denah Trase Geometrik 2D")
+with tab1:
+    st.markdown("<h3 style='color: #3A0056;'>📍 Visualisasi Denah Trase Tikungan 2D</h3>", unsafe_allow_html=True)
     
     col_t1, col_t2 = st.columns([3, 1])
     with col_t2:
-        with st.container():
-            st.markdown("#### ⚙️ Opsi Tampilan Lapisan (Layers)")
-            show_pavement = st.checkbox("Tampilkan Perkerasan Aspal", True)
-            show_shoulder = st.checkbox("Tampilkan Bahu Jalan", True)
-            show_tangents = st.checkbox("Garis Tangen & PI", True)
-            show_radius = st.checkbox("Garis Radius Rc & Pusat (O)", True)
-            show_stations = st.checkbox("Stasioning Ticks Tiap 50m", True)
+        st.markdown("""
+        <div class="tulip-card">
+            <h4 style="color: #3A0056; margin: 0 0 10px 0; font-size: 15px;">⚙️ Opsi Tampilan</h4>
+        """, unsafe_allow_html=True)
+        show_pavement = st.checkbox("Badan Perkerasan Aspal", True)
+        show_shoulder = st.checkbox("Bahu Jalan", True)
+        show_tangents = st.checkbox("Garis Tangen & Titik PI", True)
+        show_radius = st.checkbox("Jari-jari Rc & Pusat (O)", True)
+        show_stations = st.checkbox("Stasioning Ticks Tiap 50m", True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with col_t1:
         fig_2d = go.Figure()
-        
-        # Koordinat Tepi Perkerasan & Bahu
         xl, yl = x_horiz + (B / 2) * nx, y_horiz + (B / 2) * ny
         xr, yr = x_horiz - (B / 2) * nx, y_horiz - (B / 2) * ny
         x_sh_l, y_sh_l = x_horiz + (B / 2 + Bahu) * nx, y_horiz + (B / 2 + Bahu) * ny
         x_sh_r, y_sh_r = x_horiz - (B / 2 + Bahu) * nx, y_horiz - (B / 2 + Bahu) * ny
         
-        # Bahu Jalan Layer
         if show_shoulder:
             fig_2d.add_trace(go.Scatter(
                 x=np.concatenate([x_sh_l, x_sh_r[::-1]]),
                 y=np.concatenate([y_sh_l, y_sh_r[::-1]]),
-                fill='toself', fillcolor='rgba(203, 213, 225, 0.25)',
-                line=dict(color='rgba(148, 163, 184, 0.4)', dash='dot', width=1),
+                fill='toself', fillcolor='rgba(244, 143, 177, 0.18)',
+                line=dict(color='rgba(194, 24, 91, 0.35)', dash='dot', width=1),
                 name='Bahu Jalan', hoverinfo='skip'
             ))
-            
-        # Perkerasan Aspal
+
         if show_pavement:
             fig_2d.add_trace(go.Scatter(
                 x=np.concatenate([xl, xr[::-1]]),
                 y=np.concatenate([yl, yr[::-1]]),
-                fill='toself', fillcolor='rgba(56, 189, 248, 0.18)',
-                line=dict(color='rgba(14, 165, 233, 0.6)', width=1.5),
-                name='Perkerasan Jalan (Carriageway)', hoverinfo='skip'
+                fill='toself', fillcolor='rgba(200, 200, 210, 0.28)',
+                line=dict(color='#AD1457', width=1.5), name='Badan Perkerasan', hoverinfo='skip'
             ))
-            
-        # As Jalan (Centerline)
+
         fig_2d.add_trace(go.Scatter(
             x=x_horiz, y=y_horiz, mode='lines', name='As Jalan (Centerline)',
-            line=dict(color='#38BDF8', width=3),
+            line=dict(color='#3A0056', width=3),
             hovertemplate='<b>STA:</b> %{customdata}<br><b>X:</b> %{x:.2f} m<br><b>Y:</b> %{y:.2f} m<extra></extra>',
             customdata=[sta_str(r['sta_awal'] + sv) for sv in s_vals]
         ))
 
-        # Garis Tangen PI
         idx_start = np.argmin(np.abs(s_vals - 0))
         idx_end = np.argmin(np.abs(s_vals - r["Ltot"]))
         x_ts, y_ts = x_horiz[idx_start], y_horiz[idx_start]
@@ -1384,71 +1112,40 @@ with tab_denah:
         if show_tangents:
             fig_2d.add_trace(go.Scatter(
                 x=[x_ts, x_pi, x_st], y=[y_ts, y_pi, y_st],
-                mode='lines+markers', name='Tangen Singgung & PI',
-                line=dict(color='#F59E0B', width=2, dash='dash'),
-                marker=dict(size=[6, 12, 6], color='#F59E0B', symbol=['circle', 'square', 'circle'])
+                mode='lines', name='Garis Singgung Tangen', line=dict(color='#1565C0', width=1.8, dash='dash')
+            ))
+            fig_2d.add_trace(go.Scatter(
+                x=[x_pi], y=[y_pi], mode='markers', name='Titik PI',
+                marker=dict(size=10, color='#111111', symbol='square')
             ))
             fig_2d.add_annotation(
                 x=x_pi, y=y_pi,
-                text=f"<b>PI (STA {sta_str(r['sta_pi'])})</b><br>Δ = {r['delta']:.1f}° | Ts = {r['T']:.1f}m",
-                showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=1.5, arrowcolor='#F59E0B',
-                ax=20, ay=-35 if arah == "Kanan" else 35,
-                bgcolor="rgba(15, 23, 42, 0.85)", bordercolor="#F59E0B", borderwidth=1,
-                font=dict(size=11, color="#F8FAFC")
+                text=f"<b>PI</b><br>Δ = {r['delta']:.1f}°<br>STA {sta_str(r['sta_pi'])}",
+                showarrow=False, xshift=12, yshift=32 if arah == "Kanan" else -32, xanchor="left",
+                font=dict(color="#111111", size=11), bgcolor="rgba(255,255,255,0.92)",
+                bordercolor="#F48FB1", borderwidth=1, borderpad=4
             )
 
-        # Garis Radius Rc
-        mid_idx = idx_start if fc_flag else np.argmin(np.abs(s_vals - (r["Ltot"] / 2)))
+        mid_idx = idx_start if r["jenis"].startswith("Full") else np.argmin(np.abs(s_vals - (r["Ltot"] / 2)))
         x_center = x_horiz[mid_idx] + sg * r["Rc"] * nx[mid_idx]
         y_center = y_horiz[mid_idx] + sg * r["Rc"] * ny[mid_idx]
 
         if show_radius:
             fig_2d.add_trace(go.Scatter(
                 x=[x_horiz[mid_idx], x_center], y=[y_horiz[mid_idx], y_center],
-                mode='lines', name=f'Jari-jari Rc = {r["Rc"]:.0f} m',
-                line=dict(color='#10B981', width=2, dash='dot')
+                mode='lines', name=f'Jari-jari Rc = {r["Rc"]:.0f} m (Rmin = {r["Rmin"]:.1f} m)',
+                line=dict(color='#2E7D32', width=1.5, dash='dot')
             ))
             fig_2d.add_trace(go.Scatter(
-                x=[x_center], y=[y_center], mode='markers', name='Pusat Busur O',
-                marker=dict(size=12, color='#10B981', symbol='cross')
+                x=[x_center], y=[y_center], mode='markers', name='Pusat Lengkungan (O)',
+                marker=dict(size=12, color='#2E7D32', symbol='cross-thin', line=dict(width=2, color='#2E7D32'))
             ))
 
-        # Titik Kritis
-        crit_pts_x, crit_pts_y, crit_lbls = [x_ts, x_st], [y_ts, y_st], [f"<b>{lbl_start}</b><br>{sta_str(r['sta_awal'])}", f"<b>{lbl_end}</b><br>{sta_str(r['sta_akhir'])}"]
-        if not fc_flag:
-            if r["jenis"].startswith("Spiral-Spiral"):
-                idx_mid = np.argmin(np.abs(s_vals - r["Ls"]))
-                crit_pts_x.append(x_horiz[idx_mid])
-                crit_pts_y.append(y_horiz[idx_mid])
-                crit_lbls.append(f"<b>SC=CS</b><br>{sta_str(r['sta_awal'] + r['Ls'])}")
-            else:
-                idx_sc = np.argmin(np.abs(s_vals - r["Ls"]))
-                idx_cs = np.argmin(np.abs(s_vals - (r["Ls"] + r["Lc"])))
-                crit_pts_x.extend([x_horiz[idx_sc], x_horiz[idx_cs]])
-                crit_pts_y.extend([y_horiz[idx_sc], y_horiz[idx_cs]])
-                crit_lbls.extend([
-                    f"<b>SC</b><br>{sta_str(r['sta_awal'] + r['Ls'])}",
-                    f"<b>CS</b><br>{sta_str(r['sta_awal'] + r['Ls'] + r['Lc'])}"
-                ])
-
-        fig_2d.add_trace(go.Scatter(
-            x=crit_pts_x, y=crit_pts_y, mode='markers', name='Titik Utama (TS/SC/CS/ST)',
-            marker=dict(size=10, color='#EF4444', symbol='circle', line=dict(width=2, color='#FFFFFF'))
-        ))
-        for px, py, plbl in zip(crit_pts_x, crit_pts_y, crit_lbls):
-            fig_2d.add_annotation(
-                x=px, y=py, text=plbl, showarrow=False,
-                yshift=-24 if arah == "Kanan" else 24,
-                font=dict(color="#F8FAFC", size=10),
-                bgcolor="rgba(15, 23, 42, 0.85)", bordercolor="#EF4444", borderwidth=1, borderpad=3
-            )
-
-        # Stasioning Ticks Tiap 50 m
         if show_stations:
             sta_min_plot = math.ceil((r["sta_awal"] + s_vals[0]) / 50.0) * 50.0
             sta_max_plot = math.floor((r["sta_awal"] + s_vals[-1]) / 50.0) * 50.0
             tick_stas = np.arange(sta_min_plot, sta_max_plot + 1, 50.0)
-            tick_half_len = max(B * 0.8, 5.0)
+            tick_half_len = max(B * 0.85, 5.5)
             for st_val in tick_stas:
                 s_rel = st_val - r["sta_awal"]
                 if s_vals[0] <= s_rel <= s_vals[-1]:
@@ -1458,38 +1155,73 @@ with tab_denah:
                     fig_2d.add_trace(go.Scatter(
                         x=[xt0 - tick_half_len * nxt, xt0 + tick_half_len * nxt],
                         y=[yt0 - tick_half_len * nyt, yt0 + tick_half_len * nyt],
-                        mode='lines', showlegend=False, hoverinfo='skip',
-                        line=dict(color='rgba(148, 163, 184, 0.7)', width=1.2)
+                        mode='lines', showlegend=False, hoverinfo='skip', line=dict(color='#757575', width=1.2)
                     ))
+                    lbl_side = -sg
                     fig_2d.add_annotation(
-                        x=xt0 - sg * (tick_half_len + 3.0) * nxt,
-                        y=yt0 - sg * (tick_half_len + 3.0) * nyt,
+                        x=xt0 + lbl_side * (tick_half_len + 2.5) * nxt,
+                        y=yt0 + lbl_side * (tick_half_len + 2.5) * nyt,
                         text=sta_str(st_val, d=0), showarrow=False,
-                        font=dict(color="#94A3B8", size=9), bgcolor="rgba(15, 23, 42, 0.7)", borderpad=1
+                        font=dict(color="#424242", size=9.5), bgcolor="rgba(255,255,255,0.75)", borderpad=1
                     )
 
+        fc = r["jenis"].startswith("Full")
+        is_ss = r["jenis"].startswith("Spiral-Spiral")
+        pts_x, pts_y = [x_ts, x_st], [y_ts, y_st]
+        if fc:
+            pts_lbls = [f"<b>TC</b><br>{sta_str(r['sta_awal'])}", f"<b>CT</b><br>{sta_str(r['sta_akhir'])}"]
+        else:
+            pts_lbls = [f"<b>TS</b><br>{sta_str(r['sta_awal'])}", f"<b>ST</b><br>{sta_str(r['sta_akhir'])}"]
+            if is_ss:
+                idx_mid = np.argmin(np.abs(s_vals - r["Ls"]))
+                pts_x.append(x_horiz[idx_mid])
+                pts_y.append(y_horiz[idx_mid])
+                pts_lbls.append(f"<b>SC=CS</b><br>{sta_str(r['sta_awal'] + r['Ls'])}")
+            else:
+                idx_sc = np.argmin(np.abs(s_vals - r["Ls"]))
+                idx_cs = np.argmin(np.abs(s_vals - (r["Ls"] + r["Lc"])))
+                pts_x.extend([x_horiz[idx_sc], x_horiz[idx_cs]])
+                pts_y.extend([y_horiz[idx_sc], y_horiz[idx_cs]])
+                pts_lbls.extend([
+                    f"<b>SC</b><br>{sta_str(r['sta_awal'] + r['Ls'])}",
+                    f"<b>CS</b><br>{sta_str(r['sta_awal'] + r['Ls'] + r['Lc'])}"
+                ])
+
+        fig_2d.add_trace(go.Scatter(
+            x=pts_x, y=pts_y, mode='markers', name='Titik Utama (TS/SC/CS/ST)',
+            marker=dict(size=10, color='#D81B60', symbol='circle', line=dict(width=1.5, color='#FFFFFF'))
+        ))
+        for px, py, plbl in zip(pts_x, pts_y, pts_lbls):
+            fig_2d.add_annotation(
+                x=px, y=py, text=plbl, showarrow=False,
+                yshift=-26 if arah == "Kanan" else 26,
+                font=dict(color="#880E4F", size=10.5), bgcolor="rgba(255,255,255,0.92)",
+                bordercolor="#F48FB1", borderwidth=1, borderpad=3
+            )
+
+        arah_txt = "tikungan ke kiri" if arah == "Kiri" else "tikungan ke kanan"
         fig_2d.update_layout(
-            template="plotly_dark" if "Dark" in st.session_state.theme else "plotly_white",
-            xaxis=dict(title="Koordinat X (m)", gridcolor='rgba(148, 163, 184, 0.15)', scaleanchor="y", scaleratio=1),
-            yaxis=dict(title="Koordinat Y (m)", gridcolor='rgba(148, 163, 184, 0.15)'),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, bgcolor="rgba(15, 23, 42, 0.75)"),
-            margin=dict(l=40, r=40, t=50, b=40), height=620
+            title=dict(text=f"Denah Trase Tikungan - {r['jenis']} ({arah_txt})", font=dict(color='#3A0056', size=16), x=0.5, xanchor='center'),
+            xaxis=dict(title="X (m)", gridcolor='#E0E0E0', showline=True, linecolor='#333333', mirror=True),
+            yaxis=dict(title="Y (m)", gridcolor='#E0E0E0', showline=True, linecolor='#333333', mirror=True, scaleanchor="x", scaleratio=1),
+            legend=dict(bgcolor="rgba(255, 255, 255, 0.95)", bordercolor="#F48FB1", borderwidth=1, font=dict(color="#3A0056", size=11), x=0.99, y=0.99, xanchor="right", yanchor="top"),
+            plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", margin=dict(l=60, r=40, t=60, b=50), height=600
         )
         st.plotly_chart(fig_2d, use_container_width=True)
 
 # ----------------------------------------------------------------------------
 # TAB 2: DIAGRAM SUPERELEVASI INTERAKTIF
 # ----------------------------------------------------------------------------
-with tab_super:
-    st.markdown("### 📈 Diagram Superelevasi (Pencapaian Kemiringan Melintang)")
+with tab2:
+    st.markdown("<h3 style='color: #3A0056;'>📈 Diagram Superelevasi (Rotasi pada Sumbu Jalan)</h3>", unsafe_allow_html=True)
     
     e_desain = r["e"] * 100
     en_val = r["en"] * 100
     ls_val = r["Ls_sup"]
     ltot_val = r["Ltot"]
     sta_0 = r["sta_awal"]
-
-    if fc_flag:
+    
+    if r["jenis"].startswith("Full"):
         s_start_trans = -(2.0 / 3.0) * ls_val
         s_full_start = (1.0 / 3.0) * ls_val
         s_full_end = ltot_val - (1.0 / 3.0) * ls_val
@@ -1517,12 +1249,12 @@ with tab_super:
     margin_s = max(40.0, 0.25 * ltot_val)
     s_min_sup = min(0.0, s_start_trans) - margin_s
     s_max_sup = max(ltot_val, s_end_trans) + margin_s
-
+    
     key_nodes = np.unique(np.sort([
         s_min_sup, s_start_trans, s_zero_1, s_crown_1,
         s_full_start, s_full_end, s_crown_2, s_zero_2, s_end_trans, s_max_sup
     ]))
-
+    
     e_luar = np.zeros_like(key_nodes)
     e_dalam = np.zeros_like(key_nodes)
     for i, sv in enumerate(key_nodes):
@@ -1540,48 +1272,46 @@ with tab_super:
             frac = (s_end_trans - sv) / trans_len
             e_luar[i] = -en_val + frac * (e_desain + en_val)
             e_dalam[i] = min(-en_val, -e_luar[i])
-
+            
     sta_nodes = sta_0 + key_nodes
     fig_sup = go.Figure()
-    fig_sup.add_trace(go.Scatter(
-        x=sta_nodes, y=e_luar, mode='lines+markers', name='Tepi Perkerasan Luar',
-        line=dict(color='#EF4444', width=3), fill='tozeroy', fillcolor='rgba(239, 68, 68, 0.08)'
-    ))
-    fig_sup.add_trace(go.Scatter(
-        x=sta_nodes, y=e_dalam, mode='lines+markers', name='Tepi Perkerasan Dalam',
-        line=dict(color='#3B82F6', width=3), fill='tozeroy', fillcolor='rgba(59, 130, 246, 0.08)'
-    ))
-    fig_sup.add_hline(y=0, line_width=1.5, line_color="#94A3B8")
-
+    fig_sup.add_trace(go.Scatter(x=sta_nodes, y=e_luar, mode='lines', name='Tepi Perkerasan Luar', line=dict(color='#C2185B', width=3), fill='tozeroy', fillcolor='rgba(194, 24, 91, 0.08)'))
+    fig_sup.add_trace(go.Scatter(x=sta_nodes, y=e_dalam, mode='lines', name='Tepi Perkerasan Dalam', line=dict(color='#1565C0', width=3), fill='tozeroy', fillcolor='rgba(21, 101, 192, 0.06)'))
+    fig_sup.add_hline(y=0, line_width=1.2, line_color="#424242")
+    fig_sup.add_trace(go.Scatter(x=[sta_0 + s_zero_1, sta_0 + s_zero_2], y=[0.0, 0.0], mode='markers', name='Kemiringan Datar (0%)', marker=dict(size=8, color='#111111', symbol='circle')))
+    
+    y_top_limit = max(e_desain + 3.5, 13.0)
+    y_bot_limit = min(-e_desain - 3.5, -13.0)
     for ks, klbl in zip(krit_s, krit_lbl):
         sta_k = sta_0 + ks
-        fig_sup.add_vline(x=sta_k, line_width=1.2, line_dash="dash", line_color="rgba(148, 163, 184, 0.5)")
-        fig_sup.add_annotation(
-            x=sta_k, y=e_desain + 2.5, text=f"<b>{klbl}</b><br>{sta_str(sta_k)}",
-            showarrow=False, font=dict(color="#F8FAFC", size=10),
-            bgcolor="rgba(15, 23, 42, 0.8)", bordercolor="rgba(56, 189, 248, 0.4)", borderwidth=1
-        )
-
+        fig_sup.add_vline(x=sta_k, line_width=1, line_dash="dot", line_color="#757575")
+        fig_sup.add_annotation(x=sta_k, y=y_top_limit - 1.2, text=f"<b>{klbl}</b><br>{sta_str(sta_k)}", showarrow=False, font=dict(color="#3A0056", size=10.5), bgcolor="rgba(255,255,255,0.92)", bordercolor="#F48FB1", borderwidth=1, borderpad=3)
+        
+    mid_full_sta = sta_0 + (s_full_start + s_full_end) / 2
+    fig_sup.add_annotation(x=mid_full_sta, y=e_desain + 0.9, text=f"<b>+e = {e_desain:.2f}%</b>", showarrow=False, font=dict(color="#AD1457", size=11.5), bgcolor="rgba(255,255,255,0.92)", borderpad=2)
+    fig_sup.add_annotation(x=mid_full_sta, y=-e_desain - 1.1, text=f"<b>-e = -{e_desain:.2f}%</b>", showarrow=False, font=dict(color="#1565C0", size=11.5), bgcolor="rgba(255,255,255,0.92)", borderpad=2)
+    
+    tick_step = 50.0
+    x_tick_vals = np.arange(math.ceil(sta_nodes[0] / tick_step) * tick_step, math.floor(sta_nodes[-1] / tick_step) * tick_step + 1, tick_step)
+    x_tick_texts = [sta_str(v, d=0) for v in x_tick_vals]
     fig_sup.update_layout(
-        template="plotly_dark" if "Dark" in st.session_state.theme else "plotly_white",
-        title=dict(text="Diagram Superelevasi Sepanjang Trase Tikungan", font=dict(size=16)),
-        xaxis=dict(title="Stasioning (STA)", gridcolor='rgba(148, 163, 184, 0.15)'),
-        yaxis=dict(title="Kemiringan Melintang (%)", gridcolor='rgba(148, 163, 184, 0.15)'),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        margin=dict(l=40, r=40, t=60, b=40), height=520
+        title=dict(text="Diagram Superelevasi (Rotasi Sumbu Jalan)", font=dict(color='#3A0056', size=16), x=0.5, xanchor='center'),
+        xaxis=dict(title="Stasioning (STA)", tickmode='array', tickvals=x_tick_vals, ticktext=x_tick_texts, gridcolor='#E0E0E0', showline=True, linecolor='#333333', mirror=True),
+        yaxis=dict(title="Kemiringan Melintang (%)", range=[y_bot_limit, y_top_limit], gridcolor='#E0E0E0', showline=True, linecolor='#333333', mirror=True),
+        legend=dict(orientation="h", yanchor="bottom", y=0.02, xanchor="center", x=0.5, bgcolor="rgba(255, 255, 255, 0.95)", bordercolor="#F48FB1", borderwidth=1, font=dict(color="#3A0056", size=11)),
+        plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", margin=dict(l=60, r=40, t=60, b=50), height=530
     )
     st.plotly_chart(fig_sup, use_container_width=True)
 
 # ----------------------------------------------------------------------------
-# TAB 3: POTONGAN MELINTANG INTERAKTIF (DYNAMIC CROSS-SECTION TILT)
+# TAB 3: POTONGAN MELINTANG INTERAKTIF (TILT CROSS-SECTION)
 # ----------------------------------------------------------------------------
-with tab_pot:
-    st.markdown("### 📐 Potongan Melintang Dinamis (Cross-Section & Kemiringan Kendaraan)")
-    st.caption("Geser posisi stasioning untuk mengamati perubahan kemiringan melintang jalan dan sudut banking kendaraan secara real-time!")
+with tab3:
+    st.markdown("<h3 style='color: #3A0056;'>📐 Potongan Melintang Interaktif & Sudut Kemiringan Kendaraan</h3>", unsafe_allow_html=True)
+    st.caption("Geser posisi stasioning untuk mengamati perubahan kemiringan melintang jalan dan sudut banking mobil secara langsung!")
 
     sel_sta = st.slider("Pilih Posisi Stasioning (STA):", float(r["sta_awal"] - 50), float(r["sta_akhir"] + 50), float(r["sta_awal"] + r["Ls"]), 5.0)
     
-    # Hitung superelevasi pada STA terpilih
     s_curr = sel_sta - r["sta_awal"]
     if s_curr <= s_start_trans or s_curr >= s_end_trans:
         cur_eluar, cur_edalam = -en_val, -en_val
@@ -1590,7 +1320,7 @@ with tab_pot:
         frac = (s_curr - s_start_trans) / trans_len
         cur_eluar = -en_val + frac * (e_desain + en_val)
         cur_edalam = min(-en_val, -cur_eluar)
-        zone_name = "Transisi Lengkung Peralihan (Runoff / Runout)"
+        zone_name = "Lengkung Peralihan (Runoff / Runout)"
     elif s_full_start <= s_curr <= s_full_end:
         cur_eluar = e_desain
         cur_edalam = -e_desain
@@ -1604,77 +1334,70 @@ with tab_pot:
     col_cs1, col_cs2 = st.columns([3, 1])
     with col_cs2:
         st.markdown(f"""
-        <div class="glass-card">
-            <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #38BDF8;">STATUS POSISI STA</h4>
-            <p style="margin: 2px 0;"><b>STA Terpilih:</b> {sta_str(sel_sta)}</p>
-            <p style="margin: 2px 0;"><b>Zona:</b> {zone_name}</p>
-            <hr style="opacity: 0.2; margin: 10px 0;">
-            <p style="margin: 2px 0; color: #EF4444;"><b>Kemiringan Tepi Luar:</b> {cur_eluar:+.2f}%</p>
-            <p style="margin: 2px 0; color: #3B82F6;"><b>Kemiringan Tepi Dalam:</b> {cur_edalam:+.2f}%</p>
-            <p style="margin: 2px 0; color: #10B981;"><b>Lebar Jalan (B):</b> {B:.1f} m</p>
+        <div class="tulip-card">
+            <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #880E4F;">STATUS POSISI STA</h4>
+            <p style="margin: 2px 0;"><b>STA:</b> {sta_str(sel_sta)}</p>
+            <p style="margin: 2px 0; font-size: 12px; color: #AD1457;"><b>Zona:</b> {zone_name}</p>
+            <hr style="border: 0.5px solid #F8BBD0; margin: 10px 0;">
+            <p style="margin: 2px 0; color: #C2185B;"><b>Tepi Luar:</b> {cur_eluar:+.2f}%</p>
+            <p style="margin: 2px 0; color: #1565C0;"><b>Tepi Dalam:</b> {cur_edalam:+.2f}%</p>
+            <p style="margin: 2px 0; color: #2E7D32;"><b>Lebar Jalan B:</b> {B:.1f} m</p>
         </div>
         """, unsafe_allow_html=True)
 
     with col_cs1:
         fig_cs = go.Figure()
+        fig_cs.add_hline(y=0, line_dash="dash", line_color="#9E9E9E")
         
-        # Garis tanah datar horizontal acuan
-        fig_cs.add_hline(y=0, line_dash="dash", line_color="rgba(148, 163, 184, 0.4)")
-        
-        # Penampang Perkerasan Kiri dan Kanan
         half_b = B / 2.0
         y_left = (cur_eluar / 100.0) * half_b if arah == "Kanan" else (cur_edalam / 100.0) * half_b
         y_right = (cur_edalam / 100.0) * half_b if arah == "Kanan" else (cur_eluar / 100.0) * half_b
         
-        # Profil Aspal
         fig_cs.add_trace(go.Scatter(
             x=[-half_b, 0, half_b], y=[y_left, 0, y_right],
             mode='lines+markers', name='Permukaan Aspal',
-            line=dict(color='#38BDF8', width=4),
-            marker=dict(size=8, color='#0284C7')
+            line=dict(color='#AD1457', width=4),
+            marker=dict(size=8, color='#C2185B')
         ))
         
-        # Shaded Base Layer
         fig_cs.add_trace(go.Scatter(
             x=[-half_b, 0, half_b, half_b, -half_b],
-            y=[y_left, 0, y_right, y_right - 0.4, y_left - 0.4],
-            fill='toself', fillcolor='rgba(56, 189, 248, 0.2)',
+            y=[y_left, 0, y_right, y_right - 0.35, y_left - 0.35],
+            fill='toself', fillcolor='rgba(244, 143, 177, 0.25)',
             line=dict(color='rgba(0,0,0,0)'), name='Lapis Pondasi Agregat', hoverinfo='skip'
         ))
 
-        # Posisi Mobil Terhadap Kemiringan Aspal
         car_x = -half_b / 2 if arah == "Kanan" else half_b / 2
         car_y = (y_left / 2) if arah == "Kanan" else (y_right / 2)
         fig_cs.add_annotation(
-            x=car_x, y=car_y + 0.35, text="🚘", font=dict(size=36),
+            x=car_x, y=car_y + 0.32, text="🚘", font=dict(size=36),
             showarrow=False
         )
         
         fig_cs.update_layout(
-            template="plotly_dark" if "Dark" in st.session_state.theme else "plotly_white",
-            title=dict(text=f"Potongan Melintang di STA {sta_str(sel_sta)}"),
-            xaxis=dict(title="Offset Melintang (m)", range=[-half_b - 2, half_b + 2], gridcolor='rgba(148, 163, 184, 0.15)'),
-            yaxis=dict(title="Elevasi Relatif (m)", range=[-1.2, 1.2], gridcolor='rgba(148, 163, 184, 0.15)'),
-            height=420, margin=dict(l=40, r=40, t=50, b=40)
+            title=dict(text=f"Potongan Melintang Jalan di STA {sta_str(sel_sta)}", font=dict(color='#3A0056', size=15)),
+            xaxis=dict(title="Offset Melintang (m)", range=[-half_b - 2, half_b + 2], gridcolor='#E0E0E0'),
+            yaxis=dict(title="Elevasi Relatif (m)", range=[-1.1, 1.1], gridcolor='#E0E0E0'),
+            height=400, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", margin=dict(l=40, r=40, t=50, b=40)
         )
         st.plotly_chart(fig_cs, use_container_width=True)
 
 # ----------------------------------------------------------------------------
-# TAB 4: PROFIL VERTIKAL & GALIAN / TIMBUNAN
+# TAB 4: PROFIL VERTIKAL & GALIAN/TIMBUNAN
 # ----------------------------------------------------------------------------
-with tab_prof:
-    st.markdown("### ⛰️ Profil Vertikal & Neraca Galian-Timbunan (Earthwork Balance)")
-    st.caption("Perhitungan lengkung vertikal cembung/cekung dan evaluasi elevasi garis rencana terhadap tanah asli.")
+with tab4:
+    st.markdown("<h3 style='color: #3A0056;'>⛰️ Profil Vertikal & Neraca Galian-Timbunan (Earthwork)</h3>", unsafe_allow_html=True)
+    st.caption("Perhitungan lengkung vertikal cembung/cekung serta evaluasi galian dan timbunan terhadap tanah asli.")
 
     col_pv1, col_pv2 = st.columns(2)
     with col_pv1:
-        st.markdown("##### 📌 Titik Perpotongan Vertikal (PPV / PVI)")
+        st.markdown("<h5 style='color: #880E4F;'>📌 Tabel Titik Perpotongan Vertikal (PPV / PVI)</h5>", unsafe_allow_html=True)
         pvi_input = st.data_editor(
             st.session_state.pvi_df,
             num_rows="dynamic", key="pvi_editor", hide_index=True, use_container_width=True
         )
     with col_pv2:
-        st.markdown("##### 🌾 Elevasi Permukaan Tanah Asli")
+        st.markdown("<h5 style='color: #880E4F;'>🌾 Tabel Elevasi Tanah Asli</h5>", unsafe_allow_html=True)
         tanah_input = st.data_editor(
             st.session_state.tanah_df,
             num_rows="dynamic", key="tanah_editor", hide_index=True, use_container_width=True
@@ -1687,55 +1410,50 @@ with tab_prof:
         P = hitung_profil(pvi_clean, V)
         fig_vert = go.Figure()
         
-        # Tanah Asli
         fig_vert.add_trace(go.Scatter(
             x=tanah_clean.iloc[:, 0], y=tanah_clean.iloc[:, 1],
-            mode='lines+markers', name='Tanah Asli (Existing Ground)',
-            line=dict(color='#A16207', width=2, dash='dot'),
-            marker=dict(size=6, color='#CA8A04')
+            mode='lines+markers', name='Tanah Asli',
+            line=dict(color='#8D6E63', width=2, dash='dot'),
+            marker=dict(size=5, color='#6D4C41')
         ))
         
-        # Garis Rencana Jalan
         fig_vert.add_trace(go.Scatter(
             x=P["x"], y=P["y"], mode='lines', name='Elevasi Rencana Jalan',
-            line=dict(color='#0284C7', width=3.5)
+            line=dict(color='#AD1457', width=3.2)
         ))
         
-        # PVI Points
         fig_vert.add_trace(go.Scatter(
-            x=P["sta"], y=P["el"], mode='markers', name='Titik PVI / PPV',
-            marker=dict(size=10, color='#EF4444', symbol='triangle-up')
+            x=P["sta"], y=P["el"], mode='markers', name='Titik PPV (PVI)',
+            marker=dict(size=10, color='#D81B60', symbol='triangle-up')
         ))
 
-        # Annotations Kurva Vertikal
         for k in P["kurva"]:
             fig_vert.add_annotation(
                 x=k["sta"], y=k["el"],
                 text=f"<b>{k['jenis']}</b><br>Lv={k['Lv']:.0f}m | Ev={k['Ev']:.2f}m",
-                showarrow=True, arrowhead=2, arrowcolor="#EF4444",
-                ay=-35 if k["A"] < 0 else 35,
-                bgcolor="rgba(15, 23, 42, 0.85)", font=dict(color="#F8FAFC", size=9)
+                showarrow=True, arrowhead=2, arrowcolor="#D81B60",
+                ay=-32 if k["A"] < 0 else 32,
+                bgcolor="rgba(255,255,255,0.92)", font=dict(color="#3A0056", size=9.5),
+                bordercolor="#F48FB1", borderwidth=1
             )
 
-        # Highlight Zona Tikungan Horizontal
         fig_vert.add_vrect(
             x0=r["sta_awal"], x1=r["sta_akhir"],
-            fillcolor="rgba(56, 189, 248, 0.12)", layer="below", line_width=1,
-            line_dash="dash", line_color="rgba(56, 189, 248, 0.4)",
-            annotation_text="Zona Tikungan Horizontal", annotation_position="top left"
+            fillcolor="rgba(244, 143, 177, 0.15)", layer="below", line_width=1,
+            line_dash="dash", line_color="rgba(194, 24, 91, 0.4)",
+            annotation_text="Zona Tikungan Horizontal", annotation_position="top left",
+            annotation_font=dict(color="#880E4F", size=10)
         )
 
         fig_vert.update_layout(
-            template="plotly_dark" if "Dark" in st.session_state.theme else "plotly_white",
-            title=dict(text="Profil Memanjang Rencana Jalan (Alignment Vertikal)", font=dict(size=16)),
-            xaxis=dict(title="Stasioning (STA)", gridcolor='rgba(148, 163, 184, 0.15)'),
-            yaxis=dict(title="Elevasi (m DPL)", gridcolor='rgba(148, 163, 184, 0.15)'),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-            height=480, margin=dict(l=40, r=40, t=50, b=40)
+            title=dict(text="Profil Memanjang Trase Jalan (Alignment Vertikal)", font=dict(color='#3A0056', size=16)),
+            xaxis=dict(title="Stasioning (STA)", gridcolor='#E0E0E0'),
+            yaxis=dict(title="Elevasi (m DPL)", gridcolor='#E0E0E0'),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, bgcolor="rgba(255, 255, 255, 0.95)", bordercolor="#F48FB1", borderwidth=1),
+            plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", height=460, margin=dict(l=40, r=40, t=50, b=40)
         )
         st.plotly_chart(fig_vert, use_container_width=True)
 
-        # Neraca Galian dan Timbunan Tiap 50 m
         xs_ew = np.arange(math.ceil(P["x"][0] / 50) * 50, P["x"][-1] + 0.1, 50)
         rn_ew = np.interp(xs_ew, P["x"], P["y"])
         ta_ew = np.interp(xs_ew, tanah_clean.iloc[:, 0], tanah_clean.iloc[:, 1])
@@ -1746,7 +1464,7 @@ with tab_prof:
             "Elevasi Rencana (m)": np.round(rn_ew, 2),
             "Elevasi Tanah (m)": np.round(ta_ew, 2),
             "Tinggi Cut / Fill (m)": np.round(diff_ew, 2),
-            "Status": np.where(diff_ew > 0, "🟢 Timbunan (Fill)", "🔴 Galian (Cut)")
+            "Keterangan": np.where(diff_ew > 0, "🟢 Timbunan (Fill)", "🔴 Galian (Cut)")
         })
 
         col_ew1, col_ew2 = st.columns([2, 1])
@@ -1756,71 +1474,64 @@ with tab_prof:
             n_cut = np.sum(diff_ew < 0)
             n_fill = np.sum(diff_ew > 0)
             st.markdown(f"""
-            <div class="glass-card">
-                <h4 style="margin: 0 0 10px 0; color: #38BDF8;">RINGKASAN EARTHWORK</h4>
+            <div class="tulip-card">
+                <h4 style="margin: 0 0 10px 0; color: #880E4F;">RINGKASAN EARTHWORK</h4>
                 <p><b>Jarak Pandang Henti (Jh):</b> {P['Jh']:.1f} m</p>
-                <p><b>Total Titik Galian:</b> {n_cut} stasioning</p>
-                <p><b>Total Titik Timbunan:</b> {n_fill} stasioning</p>
+                <p><b>Titik Galian:</b> {n_cut} stasioning</p>
+                <p><b>Titik Timbunan:</b> {n_fill} stasioning</p>
                 <p><b>Kelandaian Maks:</b> {np.max(np.abs(P['g'])):.2f}%</p>
             </div>
             """, unsafe_allow_html=True)
     else:
-        st.warning("⚠️ Mohon input minimal 2 titik PVI pada tabel.")
+        st.info("Isi minimal 2 titik PPV dengan nilai STA yang berbeda.")
 
 # ----------------------------------------------------------------------------
-# TAB 5: SIMULATOR 3D KENDARAAN & TELEMETRI DINAMIKA
+# TAB 5: SIMULASI 3D MOBIL JALAN
 # ----------------------------------------------------------------------------
-with tab_sim:
-    st.markdown("### 🚘 Visualisasi BIM 3D & Simulator Dinamika Kendaraan")
+with tab5:
+    st.markdown("<h3 style='color: #3A0056;'>🚘 Visualisasi 3D Jalan & Simulator Mobil Jalan Otomatis</h3>", unsafe_allow_html=True)
     
-    # Indikator Keselamatan Kendaraan
     v_safe = r["v_safe"]
-    ac_lat = ((v_sim / 3.6)**2) / r["Rc"]
-    f_aktual = (v_sim**2) / (127 * r["Rc"]) - r["e"]
-
     if v_sim <= v_safe:
-        sim_badge = f"""
-        <div class="badge-safe">
-            🟢 <b>KONDISI AMAN (SAFE DESIGN):</b> Kecepatan simulasi ({v_sim} km/jam) berada di bawah batas kecepatan aman ({v_safe:.1f} km/jam).<br>
-            Percepatan lateral: <b>{ac_lat:.2f} m/s²</b> | Gesekan melintang termanfaatkan: <b>{f_aktual:.4f}</b> (Di bawah f_max = {r['fm']:.4f}).
+        car_color = "#1B5E20"
+        status_box = f"""
+        <div class="status-card status-oke">
+            🟢 <b>KONDISI HIJAU (OKE):</b> Mobil Melaju Sangat Aman!<br>
+            Kecepatan simulasi ({v_sim} km/jam) berada di bawah batas kecepatan aman tikungan ({v_safe:.1f} km/jam).
         </div>
         """
-        car_color = "#10B981"
     elif v_sim <= v_safe + 10:
-        sim_badge = f"""
-        <div class="badge-warn">
-            🟡 <b>KONDISI WASPADA (MARGINAL):</b> Kecepatan simulasi ({v_sim} km/jam) mendekati batas aman ({v_safe:.1f} km/jam).<br>
-            Pengemudi akan merasakan gaya sentrifugal yang signifikan. Harap kurangi kecepatan kendaraan!
+        car_color = "#E65100"
+        status_box = f"""
+        <div class="status-card status-sedang">
+            🟡 <b>KONDISI KUNING (SEDANG / WASPADA):</b> Mobil Mendekati Batas Aman!<br>
+            Kecepatan simulasi ({v_sim} km/jam) sedikit melampaui V_aman ({v_safe:.1f} km/jam). Harap kurangi kecepatan.
         </div>
         """
-        car_color = "#F59E0B"
     else:
-        sim_badge = f"""
-        <div class="badge-danger">
-            🔴 <b>KONDISI BAHAYA (OVER-SPEED DANGER):</b> Kecepatan ({v_sim} km/jam) melebihi batas aman tikungan ({v_safe:.1f} km/jam)!<br>
-            Gaya sentrifugal melampaui kemampuan gesekan ban. Berisiko tinggi terjadi selip lateral (skidding) atau kendaraan terguling!
+        car_color = "#B71C1C"
+        status_box = f"""
+        <div class="status-card status-bahaya">
+            🔴 <b>KONDISI MERAH (TIDAK OKE / BAHAYA):</b> Over-Speed!<br>
+            Kecepatan simulasi ({v_sim} km/jam) melampaui batas aman ({v_safe:.1f} km/jam). Berisiko selip atau kecelakaan.
         </div>
         """
-        car_color = "#EF4444"
+    st.markdown(status_box, unsafe_allow_html=True)
 
-    st.markdown(sim_badge, unsafe_allow_html=True)
-
-    # Frame animasi 3D
-    step_frame = max(1, len(s_vals) // 70)
+    step_frame = max(1, len(s_vals) // 60)
     frame_indices = list(range(0, len(s_vals), step_frame))
     if frame_indices[-1] != len(s_vals) - 1:
         frame_indices.append(len(s_vals) - 1)
-    frame_dur = max(25, int(4500 / max(v_sim, 10)))
+    frame_duration = max(30, int(4000 / max(v_sim, 10)))
 
-    frames = []
-    slider_steps = []
+    frames, slider_steps = [], []
     for idx in frame_indices:
         sta_lbl = f"STA {sta_str(r['sta_awal'] + s_vals[idx])}"
         frames.append(go.Frame(
             data=[go.Scatter3d(
                 x=[x_horiz[idx]], y=[y_horiz[idx]], z=[z_elev[idx] + 1.2],
-                mode='markers+text', marker=dict(size=11, color=car_color, symbol='diamond'),
-                text=[f"🚘 {sta_lbl}"], textposition="top center", textfont=dict(size=11, color="#F8FAFC")
+                mode='markers+text', marker=dict(size=12, color=car_color, symbol='diamond'),
+                text=[f"🚘 {sta_lbl}"], textposition="top center", textfont=dict(color="#111111", size=12)
             )],
             traces=[0], name=str(idx)
         ))
@@ -1831,72 +1542,55 @@ with tab_sim:
 
     fig_3d = go.Figure(
         data=[
-            go.Scatter3d(
-                x=[x_horiz[0]], y=[y_horiz[0]], z=[z_elev[0] + 1.2],
-                mode='markers+text', name='Kendaraan Simulasi',
-                marker=dict(size=11, color=car_color, symbol='diamond'),
-                text=[f"🚘 STA {sta_str(r['sta_awal'] + s_vals[0])}"], textposition="top center"
-            ),
-            go.Scatter3d(
-                x=x_horiz, y=y_horiz, z=z_elev, mode='lines', name='As Jalan (Centerline 3D)',
-                line=dict(color='#38BDF8', width=6)
-            ),
-            go.Scatter3d(
-                x=xl, y=yl, z=z_elev, mode='lines', name='Tepi Aspal Kiri 3D',
-                line=dict(color='#0284C7', width=3)
-            ),
-            go.Scatter3d(
-                x=xr, y=yr, z=z_elev, mode='lines', name='Tepi Aspal Kanan 3D',
-                line=dict(color='#0284C7', width=3)
-            ),
+            go.Scatter3d(x=[x_horiz[0]], y=[y_horiz[0]], z=[z_elev[0] + 1.2], mode='markers+text', name='Mobil Simulasi', marker=dict(size=12, color=car_color, symbol='diamond'), text=[f"🚘 STA {sta_str(r['sta_awal'] + s_vals[0])}"], textposition="top center", textfont=dict(color="#111111", size=12)),
+            go.Scatter3d(x=x_horiz, y=y_horiz, z=z_elev, mode='lines', name='As Jalan 3D', line=dict(color='#3A0056', width=6)),
+            go.Scatter3d(x=xl, y=yl, z=z_elev, mode='lines', name='Tepi Kiri 3D', line=dict(color='#C2185B', width=3)),
+            go.Scatter3d(x=xr, y=yr, z=z_elev, mode='lines', name='Tepi Kanan 3D', line=dict(color='#C2185B', width=3)),
         ],
         frames=frames
     )
-
     fig_3d.update_layout(
-        template="plotly_dark" if "Dark" in st.session_state.theme else "plotly_white",
-        scene=dict(
-            xaxis_title="Koordinat X (m)", yaxis_title="Koordinat Y (m)", zaxis_title="Elevasi Z (m)",
-            aspectmode='data',
-            camera=dict(eye=dict(x=1.3, y=1.3, z=0.9))
-        ),
+        title=dict(text="Visualisasi 3D Trase Jalan & Simulator Mobil (Klik ▶️ Jalan di Kiri Bawah Grafik)", font=dict(color='#3A0056', size=16)),
+        template="plotly_white",
+        scene=dict(xaxis_title="X (m)", yaxis_title="Y (m)", zaxis_title="Elevasi Z (m)", aspectmode='data'),
+        legend=dict(bgcolor="rgba(255,255,255,0.95)", bordercolor="#F48FB1", borderwidth=1, font=dict(color="#3A0056")),
         updatemenus=[{
             "type": "buttons", "showactive": True, "x": 0.02, "y": 0.02, "xanchor": "left", "yanchor": "bottom",
-            "bgcolor": "rgba(15, 23, 42, 0.8)", "bordercolor": "#0284C7", "font": {"color": "#38BDF8", "size": 12},
+            "bgcolor": "#FCE4EC", "bordercolor": "#AD1457", "font": {"color": "#880E4F", "size": 13},
             "buttons": [
-                {"label": "▶️ Jalankan Simulasi", "method": "animate", "args": [None, {"frame": {"duration": frame_dur, "redraw": True}, "fromcurrent": True, "transition": {"duration": 0}}]},
-                {"label": "⏸️ Jeda (Pause)", "method": "animate", "args": [[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate", "transition": {"duration": 0}}]}
+                {"label": "▶️ Jalan", "method": "animate", "args": [None, {"frame": {"duration": frame_duration, "redraw": True}, "fromcurrent": True, "transition": {"duration": 0}}]},
+                {"label": "⏸️ Pause", "method": "animate", "args": [[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate", "transition": {"duration": 0}}]}
             ]
         }],
         sliders=[{
             "active": 0, "yanchor": "top", "xanchor": "left",
-            "currentvalue": {"font": {"size": 12, "color": "#38BDF8"}, "prefix": "Posisi Relatif Lengkung: ", "visible": True},
-            "pad": {"b": 10, "t": 35}, "len": 0.8, "x": 0.18, "y": 0.02, "steps": slider_steps
+            "currentvalue": {"font": {"size": 13, "color": "#3A0056"}, "prefix": "Posisi Relatif: ", "visible": True, "xanchor": "right"},
+            "pad": {"b": 10, "t": 40}, "len": 0.82, "x": 0.16, "y": 0.02, "steps": slider_steps
         }],
-        margin=dict(l=0, r=0, b=40, t=20), height=640
+        margin=dict(l=0, r=0, b=40, t=50), height=620, paper_bgcolor="#FFFFFF", font=dict(color="#111111")
     )
     st.plotly_chart(fig_3d, use_container_width=True)
 
 # ----------------------------------------------------------------------------
-# TAB 6: GAMBAR KERJA SKALATIS WORD (.DOCX) DENGAN ETIKET
+# TAB 6: GAMBAR KERJA WORD (.DOCX) DENGAN ETIKET KANAN
 # ----------------------------------------------------------------------------
-with tab_cad:
-    st.markdown("### 📄 Ekspor Dokumen Gambar Kerja CAD Skalatis (.DOCX)")
-    st.info("Dokumen Microsoft Word dicetak format **A3 Landscape (420 × 297 mm)** standar gambar kerja teknik sipil hitam-putih dalam **2 lembar gambar skalatis** dengan **Etiket di sisi kanan**.")
+with tab6:
+    st.markdown("<h3 style='color: #3A0056;'>📐 Hasil Gambar Kerja Skalatis (Hitam Putih + Etiket Kanan) — Format Word (.DOCX)</h3>", unsafe_allow_html=True)
+    st.info("📄 Dokumen Word dicetak pada ukuran **A3 Landscape (420 × 297 mm)** hitam-putih dalam **2 lembar gambar kerja skalatis** lengkap dengan garis dimensi nilai perhitungan dan **Etiket di sisi kanan**.")
 
-    with st.expander("✏️ Kustomisasi Informasi Etiket (Title Block Kanan)", expanded=False):
+    with st.expander("✏️ Isi / Edit Data Etiket Gambar Kerja (Title Block Kanan)", expanded=False):
         col_et1, col_et2, col_et3 = st.columns(3)
         with col_et1:
-            et_logo = st.text_input("LOGO / Nama Instansi:", "LABORATORIUM JALAN RAYA")
-            et_kegiatan = st.text_input("KEGIATAN:", "PERENCANAAN GEOMETRIK JALAN")
-            et_pekerjaan = st.text_input("PEKERJAAN:", f"DESAIN TIKUNGAN {r['jenis'].upper()}")
+            et_logo = st.text_input("LOGO / Instansi", "LABORATORIUM JALAN RAYA")
+            et_kegiatan = st.text_input("KEGIATAN", "PERENCANAAN GEOMETRIK JALAN")
+            et_pekerjaan = st.text_input("PEKERJAAN", f"DESAIN TIKUNGAN {r['jenis'].upper()}")
         with col_et2:
-            et_lokasi = st.text_input("LOKASI PROYEK:", f"STA {sta_str(r['sta_awal'])} s/d {sta_str(r['sta_akhir'])}")
-            et_diperiksa = st.text_input("DI PERIKSA OLEH :", "Dosen Pembimbing / Senior Engineer")
+            et_lokasi = st.text_input("LOKASI", f"STA {sta_str(r['sta_awal'])} s/d {sta_str(r['sta_akhir'])}")
+            et_diperiksa = st.text_input("DI PERIKSA OLEH :", "Dosen Pembimbing / Engineer")
             et_digambar = st.text_input("DI GAMBAR OLEH :", "Perencana Geometrik")
         with col_et3:
-            et_tanggal = st.text_input("TANGGAL PENERBITAN:", date.today().strftime("%d-%m-%Y"))
-            et_catatan = st.text_area("CATATAN TAMBAHAN (Kosongkan bila otomatis):", "", height=100)
+            et_tanggal = st.text_input("TANGGAL", date.today().strftime("%d-%m-%Y"))
+            et_catatan = st.text_area("CATATAN (Kosongkan untuk otomatis dari hasil hitung)", "", height=110)
 
     meta_etiket = dict(
         logo=et_logo,
@@ -1912,58 +1606,58 @@ with tab_cad:
     prev1_buf, sk1 = render_cad_denah_bw(r, B, arah)
     prev2_buf, sk2 = render_cad_superelevasi_bw(r)
 
-    col_pw1, col_pw2 = st.columns(2)
-    with col_pw1:
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
         st.markdown(f"**Lembar 01 — Denah Tikungan Skalatis (Skala 1 : {sk1:,})**")
         st.image(prev1_buf, use_container_width=True)
-    with col_pw2:
+    with col_p2:
         st.markdown(f"**Lembar 02 — Diagram Superelevasi Skalatis (Skala 1 : {sk2:,})**")
         st.image(prev2_buf, use_container_width=True)
 
     docx_bytes, s_out1, s_out2 = generate_word_2_sheets_landscape(r, B, arah, meta_etiket)
     st.download_button(
-        label=f"📥 Unduh Berkas Word Gambar Kerja Skalatis (.DOCX) — A3 Landscape",
-        data=docx_bytes,
-        file_name=f"Gambar_Kerja_Geometri_Jalan_{r['jenis'][:3]}.docx",
+        f"📥 Unduh File Word Gambar Kerja Skalatis (.DOCX) — 2 Lembar A3 Landscape + Etiket Kanan",
+        docx_bytes,
+        file_name=f"Gambar_Kerja_Geometri_Jalan_Skala_1_{s_out1}.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         use_container_width=True
     )
 
 # ----------------------------------------------------------------------------
-# TAB 7: TABEL LAPORAN LENGKAP & EKSPOR EXCEL
+# TAB 7: TABEL HITUNGAN & EXCEL REPORT (BM 2021)
 # ----------------------------------------------------------------------------
-with tab_lap:
-    st.markdown("### 📊 Laporan Hasil Perhitungan Geometrik & Ekspor Excel Ber-Formula")
+with tab7:
+    st.markdown("<h3 style='color: #3A0056;'>📋 Tabel Hasil Perhitungan Tikungan & Laporan Excel</h3>", unsafe_allow_html=True)
     
-    a, b = ("TC", "CT") if fc_flag else ("TS", "ST")
-    summary_data = [
-        ("Jenis Tikungan", r["jenis"], "Hasil evaluasi terhadap kriteria R_fc"),
+    a, b = ("TC", "CT") if fc else ("TS", "ST")
+    rows = [
+        ("Jenis Tikungan", r["jenis"], "Acuan Kriteria R_fc"),
         ("Kecepatan Rencana (Vr)", f"{r['V']:.0f}", "km/jam"),
-        ("Sudut Tikungan (Δ)", f"{r['delta']:.2f}", "° (derajat)"),
+        ("Sudut Tikungan (Δ)", f"{r['delta']:.2f}", "°"),
         ("Jari-Jari Minimum (Rmin)", f"{r['Rmin']:.2f}", "m"),
         ("Jari-Jari Rencana (Rc)", f"{r['Rc']:.2f}", "m"),
         ("Superelevasi Maksimum (e_max)", f"{r['emax']*100:.1f}", "%"),
         ("Superelevasi Desain (e)", f"{r['e']*100:.2f}", "%"),
-        ("Panjang Lengkung Peralihan (Ls)", f"{r['Ls_sup']:.2f}", "m"),
-        ("Panjang Busur Lingkaran (Lc)", f"{r['Lc']:.2f}", "m"),
-        ("Panjang Total Tikungan (Ltot)", f"{r['Ltot']:.2f}", "m"),
+        ("Panjang Transisi (Ls dipakai)", f"{r['Ls_sup']:.2f}", "m"),
         ("Panjang Tangen (Ts)", f"{r['T']:.3f}", "m"),
         ("Jarak Eksternal (Es)", f"{r['E']:.3f}", "m"),
+        ("Koordinat Spiral (Xc / Xs)", f"{r['Xs']:.3f}", "m"),
+        ("Koordinat Spiral (yc / Ys)", f"{r['Ys']:.3f}", "m"),
         ("Pergeseran Tangen (p)", f"{r['p']:.3f}", "m"),
-        ("Absis Pusat Spiral (k)", f"{r['k']:.3f}", "m"),
+        ("Absis Pusat Lingkaran (k)", f"{r['k']:.3f}", "m"),
+        ("Panjang Total Tikungan (Ltot)", f"{r['Ltot']:.3f}", "m"),
         ("Kecepatan Aman Maksimum (V_safe)", f"{r['v_safe']:.2f}", "km/jam"),
         (f"STA {a} (Awal Tikungan)", sta_str(r["sta_awal"]), "m"),
         ("STA PI", sta_str(r["sta_pi"]), "m"),
         (f"STA {b} (Akhir Tikungan)", sta_str(r["sta_akhir"]), "m"),
     ]
-
-    st.dataframe(pd.DataFrame(summary_data, columns=["Parameter Geometrik", "Nilai Terhitung", "Keterangan / Satuan"]), hide_index=True, use_container_width=True)
+    
+    st.dataframe(pd.DataFrame(rows, columns=["Parameter Geometrik", "Nilai Calculated", "Satuan / Keterangan"]), hide_index=True, use_container_width=True)
 
     excel_bytes = generate_excel_bm2021(r, P_global)
     st.download_button(
-        label="📊 Unduh Laporan Perhitungan Lengkap Excel Ber-Formula (.XLSX)",
-        data=excel_bytes,
-        file_name="Laporan_Geometri_Jalan_BM2021.xlsx",
+        "📊 Unduh Laporan Excel Ber-Formula Otomatis (.XLSX)",
+        excel_bytes, file_name="Perhitungan_Geometri_Jalan_BM2021.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         use_container_width=True
     )
