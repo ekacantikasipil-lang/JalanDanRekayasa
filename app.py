@@ -1680,6 +1680,7 @@ with tab3:
     </select>
   </label>
   <label><input type="checkbox" id="follow" checked> Kamera ikuti mobil</label>
+  <label><input type="checkbox" id="sound" checked> 🔊 Suara</label>
   <label><input type="checkbox" id="loop" checked> Ulangi</label>
   <input type="range" id="slider" min="0" max="1" value="0" step="1">
 </div>
@@ -1790,6 +1791,67 @@ function render() {
   slider.value = Math.round(pos);
 }
 
+// ---- Efek suara (Web Audio API, tanpa file audio) ----
+let AC = null;
+function ensureAudio() {
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+  } catch (e) { AC = null; }
+}
+function soundOn() { return AC && document.getElementById('sound').checked; }
+function noiseBuf(sec) {
+  const buf = AC.createBuffer(1, Math.floor(AC.sampleRate * sec), AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
+function tone(freq, t0, dur, type, vol) {
+  const o = AC.createOscillator(); o.type = type; o.frequency.value = freq;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.setValueAtTime(vol, t0 + dur - 0.05);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function sndSkid() {            // klakson + ban berdecit
+  if (!soundOn()) return;
+  const t0 = AC.currentTime, dur = 1.5;
+  tone(440, t0, 0.45, 'square', 0.12);
+  tone(554, t0, 0.45, 'square', 0.12);
+  const src = AC.createBufferSource(); src.buffer = noiseBuf(dur);
+  const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 7;
+  bp.frequency.setValueAtTime(2800, t0); bp.frequency.exponentialRampToValueAtTime(1000, t0 + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(0.45, t0 + 0.12);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(bp); bp.connect(g); g.connect(AC.destination); src.start(t0);
+}
+function sndBoom() {            // benturan: dentuman + pecahan logam
+  if (!soundOn()) return;
+  const t0 = AC.currentTime;
+  const nz = AC.createBufferSource(); nz.buffer = noiseBuf(1.2);
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(3500, t0); lp.frequency.exponentialRampToValueAtTime(150, t0 + 1.1);
+  const ng = AC.createGain();
+  ng.gain.setValueAtTime(0.9, t0); ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1);
+  nz.connect(lp); lp.connect(ng); ng.connect(AC.destination); nz.start(t0);
+  const o = AC.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(130, t0); o.frequency.exponentialRampToValueAtTime(30, t0 + 0.7);
+  const og = AC.createGain();
+  og.gain.setValueAtTime(1.0, t0); og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.8);
+  o.connect(og); og.connect(AC.destination); o.start(t0); o.stop(t0 + 0.85);
+  [0.05, 0.16, 0.3].forEach(function(dt) {
+    const c = AC.createBufferSource(); c.buffer = noiseBuf(0.15);
+    const hp = AC.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.value = 3200 + dt * 4000; hp.Q.value = 3;
+    const cg = AC.createGain();
+    cg.gain.setValueAtTime(0.5, t0 + dt); cg.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.14);
+    c.connect(hp); hp.connect(cg); cg.connect(AC.destination); c.start(t0 + dt);
+  });
+}
+
 // ---- Fase crash: mobil lurus keluar jalur sambil berputar ----
 let slideFrom = null, slideTo = null;
 function startSlide() {
@@ -1802,6 +1864,7 @@ function startSlide() {
   // bekas ban (skid mark)
   crashLayers.push(L.polyline([slideFrom, slideTo], { color:'#212121', weight:4, opacity:.55, dashArray:'2 6' }).addTo(map));
   flagEl.textContent = '💥 CRASH!';
+  sndSkid();
 }
 
 function renderSlide(t) {
@@ -1823,6 +1886,7 @@ function finishCrash() {
   crashLayers.push(L.marker(slideTo, { zIndexOffset: 2000, icon: L.divIcon({ className:'', html:'<div class="boom">💥</div>', iconSize:[46,46], iconAnchor:[23,40] }) }).addTo(map));
   crashLayers.push(L.marker(slideTo, { zIndexOffset: 1500, icon: L.divIcon({ className:'', html:'<div class="key-lbl" style="border-color:#B71C1C;background:#FFEBEE">CRASH<br>STA ' + D.crashSta + '</div>', iconSize:[0,0], iconAnchor:[-14,-6] }) }).addTo(map));
   banner.style.display = 'block';
+  sndBoom();
   setHud(D.crashSta, D.z[D.crashIdx]);
   document.getElementById('hV').textContent = '0';
   if (document.getElementById('loop').checked) {
@@ -1866,6 +1930,7 @@ function frame(ts) {
 }
 
 function startPlay() {
+  ensureAudio();
   playing = true; playBtn.textContent = '⏸ Pause';
   last = null; requestAnimationFrame(frame);
 }
